@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ru.training.pikabu.ui.theme.PikabuTrainingTheme
 
 private var currentToast: Toast? = null
@@ -67,9 +68,22 @@ fun SettingsScreen() {
     val context = LocalContext.current
 
     Column {
+        Header()
         InternalLinksSection(context)
         ExternalLinksSection(context)
     }
+}
+
+@Composable
+fun Header() {
+    Text(
+        text = "Еще",
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth()
+            .wrapContentWidth(Alignment.CenterHorizontally),
+        fontSize = 24.sp
+    )
 }
 
 @Composable
