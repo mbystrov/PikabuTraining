@@ -9,11 +9,13 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,120 +44,132 @@ class MainActivity : ComponentActivity() {
         setContent {
             PikabuTrainingTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    SettingScreen()
+                    SettingsScreen()
                 }
             }
         }
     }
 }
 
+sealed class LinkType {
+    data object Internal : LinkType()
+    data object External : LinkType()
+}
+
+data class LinkItem(
+    val text: String,
+    val iconResource: Int,
+    val type: LinkType
+)
 
 @Composable
-fun SettingScreen() {
+fun SettingsScreen() {
     val context = LocalContext.current
 
     Column {
-        Column(
-            modifier = Modifier.padding(bottom = 16.dp)
-        ) {
-            InternalLinkItem(text = "Комментарии дня", R.drawable.comment) {
-                showToast(context, "Комментарии дня", Toast.LENGTH_SHORT)
-            }
-            HorizontalDivider()
-            InternalLinkItem(text = "О нас", R.drawable.circle_exclamation) {
-                showToast(context, "О нас", Toast.LENGTH_SHORT)
-            }
-            HorizontalDivider()
-            InternalLinkItem(text = "Внешний вид", R.drawable.palette) {
-                showToast(context, "Внешний вид", Toast.LENGTH_SHORT)
+        InternalLinksSection(context)
+        ExternalLinksSection(context)
+    }
+}
+
+@Composable
+fun InternalLinksSection(context: Context) {
+    Column(
+        modifier = Modifier.padding(bottom = 16.dp)
+    ) {
+        internalLinks.forEach { link ->
+            LinkItem(link) {
+                showToast(context, link.text, Toast.LENGTH_SHORT)
             }
             HorizontalDivider()
         }
-        Column {
-            ExternalLinkItem(text = "Кодекс Пикабу", R.drawable.pikabu_cake) {
-                showToast(context, "Кодекс Пикабу", Toast.LENGTH_SHORT)
-            }
-            ExternalLinkItem(text = "Правила соцсети", R.drawable.megaphone) {
-                showToast(context, "Правила соцсети", Toast.LENGTH_SHORT)
-            }
-            ExternalLinkItem(text = "О рекомендациях", R.drawable.open_book) {
-                showToast(context, "О рекомендациях", Toast.LENGTH_SHORT)
-            }
-            ExternalLinkItem(text = "FAQ", R.drawable.circle_exclamation) {
-                showToast(context, "FAQ", Toast.LENGTH_SHORT)
-            }
-            ExternalLinkItem(text = "Магазин", R.drawable.shop) {
-                showToast(context, "Магазин", Toast.LENGTH_SHORT)
-            }
-            ExternalLinkItem(text = "Зал славы", R.drawable.prize) {
-                showToast(context, "Зал славы", Toast.LENGTH_SHORT)
+    }
+}
+
+@Composable
+fun ExternalLinksSection(context: Context) {
+    Column {
+        externalLinks.forEach { link ->
+            LinkItem(link) {
+                showToast(context, link.text, Toast.LENGTH_SHORT)
             }
         }
     }
 }
 
 @Composable
-fun InternalLinkItem(text: String, iconResource: Int, onClick: () -> Unit) {
+fun LinkItem(item: LinkItem, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp, horizontal = 8.dp)
-            .semantics { contentDescription = "$text, нажмите для открытия экрана" },
+            .semantics { contentDescription = getContentDescription(item) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(
-            painter = painterResource(id = iconResource),
-            contentDescription = null,
-            modifier = Modifier
-                .size(16.dp)
-        )
-        Text(
-            text = text, modifier = Modifier
-                .padding(8.dp)
-                .weight(1f)
-        )
-        Image(
-            painter = painterResource(id = R.drawable.arrow),
-            contentDescription = null,
-            modifier = Modifier
-                .size(24.dp)
-        )
+        LeadingIcon(item.iconResource)
+        LinkText(item.text)
+        Spacer(modifier = Modifier.weight(1f))
+        TrailingIcon(item.type)
     }
 }
 
 @Composable
-fun ExternalLinkItem(text: String, iconResource: Int, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 8.dp)
-            .semantics { contentDescription = "$text, нажмите для перехода на сайт" },
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Image(
-            painter = painterResource(id = iconResource),
-            contentDescription = null,
-            modifier = Modifier.size(16.dp)
-        )
-        Text(
-            text = text, modifier = Modifier
-                .padding(8.dp)
-                .weight(1f)
-        )
-        Image(
-            painter = painterResource(id = R.drawable.new_tab),
-            contentDescription = null,
-            modifier = Modifier.size(24.dp)
-        )
-    }
+fun LeadingIcon(iconResource: Int) {
+    Icon(
+        painter = painterResource(id = iconResource),
+        contentDescription = null,
+        modifier = Modifier.size(16.dp)
+    )
 }
+
+@Composable
+fun LinkText(text: String) {
+    Text(
+        text = text, modifier = Modifier
+            .padding(8.dp)
+    )
+}
+
+@Composable
+fun TrailingIcon(type: LinkType) {
+    val iconResource = getIconResource(type)
+    Icon(
+        painter = painterResource(id = iconResource),
+        contentDescription = null,
+        modifier = Modifier.size(24.dp)
+    )
+}
+
+fun getIconResource(type: LinkType) = when (type) {
+    is LinkType.Internal -> R.drawable.arrow
+    is LinkType.External -> R.drawable.new_tab
+}
+
+fun getContentDescription(item: LinkItem) = when (item.type) {
+    is LinkType.Internal -> "${item.text}, нажмите для открытия экрана"
+    is LinkType.External -> "${item.text}, нажмите для перехода на сайт"
+}
+
+val internalLinks = listOf(
+    LinkItem("Комментарии дня", R.drawable.comment, LinkType.Internal),
+    LinkItem("О нас", R.drawable.circle_exclamation, LinkType.Internal),
+    LinkItem("Внешний вид", R.drawable.palette, LinkType.Internal)
+)
+
+val externalLinks = listOf(
+    LinkItem("Кодекс Пикабу", R.drawable.pikabu_cake, LinkType.External),
+    LinkItem("Правила соцсети", R.drawable.megaphone, LinkType.External),
+    LinkItem("О рекомендациях", R.drawable.open_book, LinkType.External),
+    LinkItem("FAQ", R.drawable.circle_exclamation, LinkType.External),
+    LinkItem("Магазин", R.drawable.shop, LinkType.External),
+    LinkItem("Зал славы", R.drawable.prize, LinkType.External)
+)
 
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
     PikabuTrainingTheme {
-        SettingScreen()
+        SettingsScreen()
     }
 }
