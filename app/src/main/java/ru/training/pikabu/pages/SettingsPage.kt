@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.training.pikabu.R
 import ru.training.pikabu.showToast
-import ru.training.pikabu.ui.theme.PikabuTrainingTheme
 
 sealed class LinkType {
     data object Internal : LinkType()

@@ -3,6 +3,7 @@ package ru.training.pikabu
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
@@ -52,8 +53,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 }
             }
         }
-    ) {
-        ContentScreen(selectedIndex = selectedIndex)
+    ) { innerPadding ->
+        ContentScreen(modifier = modifier.padding(innerPadding), selectedIndex = selectedIndex)
     }
 }
 
