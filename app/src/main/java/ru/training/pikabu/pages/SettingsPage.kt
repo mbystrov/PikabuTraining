@@ -42,17 +42,17 @@ fun SettingsPage(modifier: Modifier = Modifier) {
     val context = LocalContext.current
 
     Column {
-        Header("Еще")
-        InternalLinksSection(context)
-        ExternalLinksSection(context)
+        Header(text = "Еще")
+        InternalLinksSection(context = context)
+        ExternalLinksSection(context = context)
     }
 }
 
 @Composable
-fun Header(text: String) {
+fun Header(modifier: Modifier = Modifier, text: String) {
     Text(
         text = text,
-        modifier = Modifier
+        modifier = modifier
             .padding(vertical = 8.dp)
             .fillMaxWidth()
             .wrapContentWidth(Alignment.CenterHorizontally),
@@ -61,12 +61,12 @@ fun Header(text: String) {
 }
 
 @Composable
-fun InternalLinksSection(context: Context) {
+fun InternalLinksSection(modifier: Modifier = Modifier, context: Context) {
     Column(
-        modifier = Modifier.padding(bottom = 16.dp)
+        modifier = modifier.padding(bottom = 16.dp)
     ) {
         internalLinks.forEach { link ->
-            LinkItem(link) {
+            LinkItem(modifier, link) {
                 showToast(context, link.text, Toast.LENGTH_SHORT)
             }
             HorizontalDivider()
@@ -75,10 +75,10 @@ fun InternalLinksSection(context: Context) {
 }
 
 @Composable
-fun ExternalLinksSection(context: Context) {
-    Column {
+fun ExternalLinksSection(modifier: Modifier = Modifier, context: Context) {
+    Column(modifier = modifier) {
         externalLinks.forEach { link ->
-            LinkItem(link) {
+            LinkItem(modifier, link) {
                 showToast(context, link.text, Toast.LENGTH_SHORT)
             }
         }
@@ -86,46 +86,46 @@ fun ExternalLinksSection(context: Context) {
 }
 
 @Composable
-fun LinkItem(item: LinkItem, onClick: () -> Unit) {
+fun LinkItem(modifier: Modifier = Modifier, item: LinkItem, onClick: () -> Unit) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp, horizontal = 8.dp)
             .semantics { contentDescription = getContentDescription(item) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        LeadingIcon(item.iconResource)
-        LinkText(item.text)
+        LeadingIcon(iconResource = item.iconResource)
+        LinkText(text = item.text)
         Spacer(modifier = Modifier.weight(1f))
-        TrailingIcon(item.type)
+        TrailingIcon(type = item.type)
     }
 }
 
 @Composable
-fun LeadingIcon(iconResource: Int) {
+fun LeadingIcon(modifier: Modifier = Modifier, iconResource: Int) {
     Icon(
         painter = painterResource(id = iconResource),
         contentDescription = null,
-        modifier = Modifier.size(16.dp)
+        modifier = modifier.size(16.dp)
     )
 }
 
 @Composable
-fun LinkText(text: String) {
+fun LinkText(modifier: Modifier = Modifier, text: String) {
     Text(
-        text = text, modifier = Modifier
+        text = text, modifier = modifier
             .padding(8.dp)
     )
 }
 
 @Composable
-fun TrailingIcon(type: LinkType) {
+fun TrailingIcon(modifier: Modifier = Modifier, type: LinkType) {
     val iconResource = getIconResource(type)
     Icon(
         painter = painterResource(id = iconResource),
         contentDescription = null,
-        modifier = Modifier.size(24.dp)
+        modifier = modifier.size(24.dp)
     )
 }
 

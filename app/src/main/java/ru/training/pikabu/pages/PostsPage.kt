@@ -1,8 +1,10 @@
 package ru.training.pikabu.pages
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,11 +16,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,25 +32,27 @@ fun PostsPage(modifier: Modifier = Modifier) {
 
     val postsList = generatePosts()
 
-    Column {
-        Header("Посты")
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        Header(text = "Посты")
         PostsList(posts = postsList)
     }
 }
 
 @Composable
-fun PostsList(posts: List<Post>) {
-    LazyColumn {
-        items(posts, key = { post -> post.name}) { post ->
+fun PostsList(modifier: Modifier = Modifier, posts: List<Post>) {
+    LazyColumn(modifier = modifier) {
+        items(posts, key = { post -> post.name }) { post ->
             PostView(name = post.name)
         }
     }
 }
 
 @Composable
-fun PostView(name: String) {
+fun PostView(modifier: Modifier = Modifier, name: String) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(8.dp)
     ) {
@@ -64,19 +70,20 @@ fun PostView(name: String) {
 }
 
 @Composable
-fun PostIcon(name: String) {
+fun PostIcon(modifier: Modifier = Modifier, name: String) {
     Icon(
         imageVector = Icons.Default.Edit,
         contentDescription = "Icon of the post $name",
-        modifier = Modifier
+        modifier = modifier
             .size(60.dp)
             .clip(CircleShape)
     )
 }
 
 @Composable
-fun PostTitle(name: String) {
+fun PostTitle(modifier: Modifier = Modifier, name: String) {
     Text(
+        modifier = modifier,
         text = name,
         fontSize = 20.sp
     )

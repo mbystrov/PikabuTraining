@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -22,7 +23,7 @@ import ru.training.pikabu.pages.PostsPage
 import ru.training.pikabu.pages.SettingsPage
 
 @Composable
-fun MainScreen(modifier: Modifier = Modifier) {
+fun MainScreen() {
 
     val navItemList = listOf(
         NavItem(Icons.Default.Home),
@@ -36,7 +37,9 @@ fun MainScreen(modifier: Modifier = Modifier) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar(modifier = Modifier.height(32.dp)) {
+            NavigationBar(
+                modifier = Modifier.height(32.dp),
+            ) {
                 navItemList.forEachIndexed { index, navItem ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
@@ -54,7 +57,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
             }
         }
     ) { innerPadding ->
-        ContentScreen(modifier = modifier.padding(innerPadding), selectedIndex = selectedIndex)
+        ContentScreen(modifier = Modifier.padding(innerPadding), selectedIndex = selectedIndex)
     }
 }
 
