@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,10 +22,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import ru.training.pikabu.R
 import ru.training.pikabu.showToast
+import ru.training.pikabu.ui.theme.PikabuDimensions
 
 sealed class LinkType {
     data object Internal : LinkType()
@@ -53,17 +53,17 @@ fun Header(modifier: Modifier = Modifier, text: String) {
     Text(
         text = text,
         modifier = modifier
-            .padding(vertical = 8.dp)
             .fillMaxWidth()
-            .wrapContentWidth(Alignment.CenterHorizontally),
-        fontSize = 24.sp
+            .wrapContentWidth(Alignment.CenterHorizontally)
+            .padding(PikabuDimensions.paddingMedium),
+        style = MaterialTheme.typography.headlineMedium
     )
 }
 
 @Composable
 fun InternalLinksSection(modifier: Modifier = Modifier, context: Context) {
     Column(
-        modifier = modifier.padding(bottom = 16.dp)
+        modifier = modifier.padding(bottom = PikabuDimensions.paddingLarge)
     ) {
         internalLinks.forEach { link ->
             LinkItem(modifier, link) {
@@ -91,7 +91,10 @@ fun LinkItem(modifier: Modifier = Modifier, item: LinkItem, onClick: () -> Unit)
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp, horizontal = 8.dp)
+            .padding(
+                vertical = PikabuDimensions.paddingMedium,
+                horizontal = PikabuDimensions.paddingMedium
+            )
             .semantics { contentDescription = getContentDescription(item) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -107,15 +110,17 @@ fun LeadingIcon(modifier: Modifier = Modifier, iconResource: Int) {
     Icon(
         painter = painterResource(id = iconResource),
         contentDescription = null,
-        modifier = modifier.size(16.dp)
+        modifier = modifier.size(PikabuDimensions.iconSizeMedium)
     )
 }
 
 @Composable
 fun LinkText(modifier: Modifier = Modifier, text: String) {
     Text(
-        text = text, modifier = modifier
-            .padding(8.dp)
+        text = text,
+        modifier = modifier
+            .padding(PikabuDimensions.paddingMedium),
+        style = MaterialTheme.typography.bodyMedium
     )
 }
 
@@ -125,7 +130,7 @@ fun TrailingIcon(modifier: Modifier = Modifier, type: LinkType) {
     Icon(
         painter = painterResource(id = iconResource),
         contentDescription = null,
-        modifier = modifier.size(24.dp)
+        modifier = modifier.size(PikabuDimensions.iconSizeMedium)
     )
 }
 
