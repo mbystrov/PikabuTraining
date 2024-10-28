@@ -17,19 +17,21 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import ru.training.pikabu.PostsViewModel
 import ru.training.pikabu.data.model.Post
 import ru.training.pikabu.ui.theme.PikabuDimensions
 import ru.training.pikabu.ui.theme.PikabuShapes
 
 @Composable
-fun PostsPage(modifier: Modifier = Modifier) {
+fun PostsPage(modifier: Modifier = Modifier, viewModel: PostsViewModel) {
 
-    val postsList = generatePosts()
+    val postsList by viewModel.postsData.collectAsState(initial = emptyList())
 
     Column(
         modifier = modifier.fillMaxSize()
@@ -98,8 +100,8 @@ fun generatePosts(): List<Post> {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun PostsPagePreview() {
-    PostsPage()
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun PostsPagePreview() {
+//    PostsPage()
+//}

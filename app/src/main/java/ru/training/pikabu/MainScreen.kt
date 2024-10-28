@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -23,7 +22,7 @@ import ru.training.pikabu.pages.PostsPage
 import ru.training.pikabu.pages.SettingsPage
 
 @Composable
-fun MainScreen() {
+fun MainScreen(viewModel: PostsViewModel) {
 
     val navItemList = listOf(
         NavItem(Icons.Default.Home),
@@ -57,15 +56,15 @@ fun MainScreen() {
             }
         }
     ) { innerPadding ->
-        ContentScreen(modifier = Modifier.padding(innerPadding), selectedIndex = selectedIndex)
+        ContentScreen(modifier = Modifier.padding(innerPadding), selectedIndex = selectedIndex, viewModel = viewModel)
     }
 }
 
 @Composable
-fun ContentScreen(modifier: Modifier = Modifier, selectedIndex: Int) {
+fun ContentScreen(modifier: Modifier = Modifier, selectedIndex: Int, viewModel: PostsViewModel) {
     Box(modifier = modifier) {
         when (selectedIndex) {
-            0 -> PostsPage()
+            0 -> PostsPage(viewModel = viewModel)
             1 -> SettingsPage()
         }
     }
