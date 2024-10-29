@@ -10,19 +10,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.Preview
 import ru.training.pikabu.R
+import ru.training.pikabu.SettingsIntent
+import ru.training.pikabu.SettingsViewModel
 import ru.training.pikabu.showToast
 import ru.training.pikabu.ui.theme.PikabuDimensions
 
@@ -38,13 +44,42 @@ data class LinkItem(
 )
 
 @Composable
-fun SettingsPage(modifier: Modifier = Modifier) {
+fun SettingsPage(
+    modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel
+) {
     val context = LocalContext.current
+    val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.handleIntent(SettingsIntent.LoadLinks)
+    }
 
     Column {
         Header(text = "Еще")
-        InternalLinksSection(context = context)
-        ExternalLinksSection(context = context)
+        if (state.isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        } else {
+            InternalLinksSection(
+                links = state.internalLinks,
+                onLinkClick = { link ->
+                    showToast(context, link.text, Toast.LENGTH_SHORT)
+                }
+            )
+            ExternalLinksSection(
+                links = state.externalLinks,
+                onLinkClick = { link ->
+                    showToast(context, link.text, Toast.LENGTH_SHORT)
+                }
+            )
+            CustomSettingsSection(
+                settings = state.customSetting,
+                onSettingClick = { link ->
+                    showToast(context, link.text, Toast.LENGTH_SHORT)
+                }
+            )
+            AddSettingButton(onClick = {viewModel.handleIntent(SettingsIntent.AddSetting) })
+        }
     }
 }
 
@@ -61,32 +96,70 @@ fun Header(modifier: Modifier = Modifier, text: String) {
 }
 
 @Composable
-fun InternalLinksSection(modifier: Modifier = Modifier, context: Context) {
+fun InternalLinksSection(
+    links: List<LinkItem>,
+    onLinkClick: (LinkItem) -> Unit
+) {
     Column(
-        modifier = modifier.padding(bottom = PikabuDimensions.paddingLarge)
+        modifier = Modifier.padding(bottom = PikabuDimensions.paddingLarge)
     ) {
-        internalLinks.forEach { link ->
-            LinkItem(modifier, link) {
-                showToast(context, link.text, Toast.LENGTH_SHORT)
-            }
+//        Text(
+//            text = "Внутренние ссылки",
+//            style = MaterialTheme.typography.headlineSmall,
+//            modifier = Modifier.padding(PikabuDimensions.paddingMedium)
+//        )
+        links.forEach { link ->
+            LinkItemComposable(item = link, onClick = { onLinkClick(link) })
             HorizontalDivider()
         }
     }
 }
 
 @Composable
-fun ExternalLinksSection(modifier: Modifier = Modifier, context: Context) {
+fun ExternalLinksSection(
+    modifier: Modifier = Modifier,
+    links: List<LinkItem>,
+    onLinkClick: (LinkItem) -> Unit
+) {
     Column(modifier = modifier) {
-        externalLinks.forEach { link ->
-            LinkItem(modifier, link) {
-                showToast(context, link.text, Toast.LENGTH_SHORT)
-            }
+        links.forEach { link ->
+            LinkItemComposable(item = link, onClick = { onLinkClick(link) })
         }
     }
 }
 
 @Composable
-fun LinkItem(modifier: Modifier = Modifier, item: LinkItem, onClick: () -> Unit) {
+fun CustomSettingsSection(
+    settings: List<LinkItem>,
+    onSettingClick: (LinkItem) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column {
+        settings.forEach { setting ->
+            LinkItemComposable(item = setting, onClick = {
+                onSettingClick(setting)
+            })
+            HorizontalDivider()
+        }
+    }
+}
+
+@Composable
+fun AddSettingButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(PikabuDimensions.paddingMedium)) {
+        Text(text = "Добавить настройку")
+    }
+}
+
+@Composable
+fun LinkItemComposable(modifier: Modifier = Modifier, item: LinkItem, onClick: () -> Unit) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -159,8 +232,8 @@ val externalLinks = listOf(
     LinkItem("Зал славы", R.drawable.prize, LinkType.External)
 )
 
-@Preview(showBackground = true)
-@Composable
-fun SettingsPagePreview() {
-    SettingsPage()
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun SettingsPagePreview() {
+//    SettingsPage()
+//}

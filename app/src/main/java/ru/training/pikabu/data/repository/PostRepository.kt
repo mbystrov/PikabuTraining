@@ -11,7 +11,7 @@ class PostRepository {
     fun getPosts(): Flow<List<Post>> = flow {
         val posts = mutableListOf<Post>()
         while (nextId < 15) {
-            delay(3000)
+            delay(1000)
             posts.add(Post(nextId.toString(), "New Post #$nextId"))
             emit(posts.toList())
             nextId++

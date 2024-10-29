@@ -22,7 +22,7 @@ import ru.training.pikabu.pages.PostsPage
 import ru.training.pikabu.pages.SettingsPage
 
 @Composable
-fun MainScreen(viewModel: PostsViewModel) {
+fun MainScreen(postViewModel: PostsViewModel, settingsViewModel: SettingsViewModel) {
 
     val navItemList = listOf(
         NavItem(Icons.Default.Home),
@@ -56,16 +56,26 @@ fun MainScreen(viewModel: PostsViewModel) {
             }
         }
     ) { innerPadding ->
-        ContentScreen(modifier = Modifier.padding(innerPadding), selectedIndex = selectedIndex, viewModel = viewModel)
+        ContentScreen(
+            modifier = Modifier.padding(innerPadding),
+            selectedIndex = selectedIndex,
+            postsViewModel = postViewModel,
+            settingsViewModel = settingsViewModel
+        )
     }
 }
 
 @Composable
-fun ContentScreen(modifier: Modifier = Modifier, selectedIndex: Int, viewModel: PostsViewModel) {
+fun ContentScreen(
+    modifier: Modifier = Modifier,
+    selectedIndex: Int,
+    postsViewModel: PostsViewModel,
+    settingsViewModel: SettingsViewModel
+) {
     Box(modifier = modifier) {
         when (selectedIndex) {
-            0 -> PostsPage(viewModel = viewModel)
-            1 -> SettingsPage()
+            0 -> PostsPage(viewModel = postsViewModel)
+            1 -> SettingsPage(viewModel = settingsViewModel)
         }
     }
 }

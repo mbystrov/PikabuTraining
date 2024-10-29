@@ -18,13 +18,14 @@ fun showToast(context: Context, message: String, duration: Int = Toast.LENGTH_SH
 }
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: PostsViewModel by viewModels()
+    private val postsViewModel: PostsViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             PikabuTrainingTheme {
-                MainScreen(viewModel)
+                MainScreen(postsViewModel, settingsViewModel)
             }
         }
     }
