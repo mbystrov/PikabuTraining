@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,20 +32,24 @@ import ru.training.pikabu.ui.theme.PikabuShapes
 @Composable
 fun PostsPage(modifier: Modifier = Modifier, viewModel: PostsViewModel) {
 
-    val postsList by viewModel.postsData.collectAsState(initial = emptyList())
+    val postsList by viewModel.postsData.collectAsState()
 
     Column(
         modifier = modifier.fillMaxSize()
     ) {
         Header(text = "Посты")
-        PostsList(posts = postsList)
+        PostsList(posts = postsList, modifier = Modifier.weight(1f))
+        PostsControlButtons(
+            addPostButtonOnClick = { viewModel.createPost() },
+            deletePostButtonOnClick = { viewModel.deletePost() },
+        )
     }
 }
 
 @Composable
 fun PostsList(modifier: Modifier = Modifier, posts: List<Post>) {
     LazyColumn(modifier = modifier) {
-        items(posts, key = { post -> post.name }) { post ->
+        items(posts, key = { post -> post.id }) { post ->
             PostView(name = post.name)
         }
     }
@@ -91,12 +96,45 @@ fun PostTitle(modifier: Modifier = Modifier, name: String) {
     )
 }
 
-fun generatePosts(): List<Post> {
-    return List(10) { index ->
-        Post(
-            id = "$index",
-            name = "Post #${index}",
-        )
+@Composable
+fun PostsControlButtons(
+    addPostButtonOnClick: () -> Unit,
+    deletePostButtonOnClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(modifier = modifier.fillMaxWidth()) {
+        AddPostButton(onClick = addPostButtonOnClick, modifier = Modifier.weight(1f))
+        DeletePostButton(onClick = deletePostButtonOnClick, modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+fun AddPostButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(PikabuDimensions.paddingMedium),
+    ) {
+        Text(text = "Добавить пост")
+    }
+}
+
+@Composable
+fun DeletePostButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(PikabuDimensions.paddingMedium),
+    ) {
+        Text(text = "Удалить пост")
     }
 }
 

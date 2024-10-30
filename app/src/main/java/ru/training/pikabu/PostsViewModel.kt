@@ -2,27 +2,44 @@ package ru.training.pikabu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import ru.training.pikabu.data.model.Post
 import ru.training.pikabu.data.repository.PostRepository
+import ru.training.pikabu.data.repository.PostRepositoryImpl
+import java.util.UUID
 
 class PostsViewModel : ViewModel() {
-    private val postRepository = PostRepository()
-    private val _postsData = MutableSharedFlow<List<Post>>()
-    val postsData: SharedFlow<List<Post>> = _postsData.asSharedFlow()
+    private val postRepository: PostRepository = PostRepositoryImpl()
+    private val _postsData = MutableStateFlow<List<Post>>(emptyList())
+    val postsData: StateFlow<List<Post>> = _postsData
 
-    init {
-        refreshPostsData()
+
+    fun createPost() {
+        viewModelScope.launch {
+            val newPost = Post(
+                "${UUID.randomUUID()}",
+                "Post ${_postsData.value.size + 1}"
+            )
+            postRepository.addPost(newPost)
+            refreshPostsData()
+        }
+    }
+
+    fun deletePost() {
+        viewModelScope.launch {
+            if (_postsData.value.isNotEmpty()) {
+                postRepository.deletePost()
+            }
+            refreshPostsData()
+        }
     }
 
     private fun refreshPostsData() {
         viewModelScope.launch {
-            postRepository.getPosts().collect { posts ->
-                _postsData.emit(posts)
-            }
+            val posts = postRepository.getPosts()
+            _postsData.value = posts
         }
     }
 }
