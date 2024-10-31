@@ -22,16 +22,19 @@ import ru.training.pikabu.pages.PostsPage
 import ru.training.pikabu.pages.SettingsPage
 
 @Composable
-fun MainScreen(postViewModel: PostsViewModel, settingsViewModel: SettingsViewModel) {
+fun MainScreen(
+    postViewModel: PostsViewModel,
+    settingsViewModel: SettingsViewModel,
+    currentScreenIndex: Int,
+    onScreenChange: (Int) -> Unit
+) {
 
     val navItemList = listOf(
         NavItem(Icons.Default.Home),
         NavItem(Icons.Default.MoreVert),
     )
 
-    var selectedIndex by remember {
-        mutableIntStateOf(0)
-    }
+    var selectedIndex by remember { mutableIntStateOf(currentScreenIndex) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -44,6 +47,7 @@ fun MainScreen(postViewModel: PostsViewModel, settingsViewModel: SettingsViewMod
                         selected = selectedIndex == index,
                         onClick = {
                             selectedIndex = index
+                            onScreenChange(index)
                         },
                         icon = {
                             Icon(
