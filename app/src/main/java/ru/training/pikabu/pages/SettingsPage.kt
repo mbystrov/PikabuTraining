@@ -1,33 +1,45 @@
 package ru.training.pikabu.pages
 
-import android.content.Context
-import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import ru.training.pikabu.R
 import ru.training.pikabu.SettingsIntent
+import ru.training.pikabu.SettingsState
 import ru.training.pikabu.SettingsViewModel
 import ru.training.pikabu.showToast
 import ru.training.pikabu.ui.theme.PikabuDimensions
@@ -60,26 +72,28 @@ fun SettingsPage(
         if (state.isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         } else {
-            InternalLinksSection(
-                links = state.internalLinks,
-                onLinkClick = { link ->
-                    showToast(context, link.text, Toast.LENGTH_SHORT)
+            SettingsContent(
+                state = state,
+                onLinkClick = { link -> showToast(context = context, message = link.text) },
+                onAddSettingClick = { viewModel.handleIntent(SettingsIntent.ShowAddSettingDialog) },
+                onLinkToggle = { linkText ->
+                    viewModel.handleIntent(
+                        SettingsIntent.ToggleSetting(
+                            linkText
+                        )
+                    )
                 }
             )
-            ExternalLinksSection(
-                links = state.externalLinks,
-                onLinkClick = { link ->
-                    showToast(context, link.text, Toast.LENGTH_SHORT)
-                }
-            )
-            CustomSettingsSection(
-                settings = state.customSetting,
-                onSettingClick = { link ->
-                    showToast(context, link.text, Toast.LENGTH_SHORT)
-                }
-            )
-            AddSettingButton(onClick = {viewModel.handleIntent(SettingsIntent.AddSetting) })
         }
+    }
+
+    if (state.isAddSettingDialogVisible) {
+        AddSettingDialog(
+            onDismiss = { viewModel.handleIntent(SettingsIntent.ShowAddSettingDialog) },
+            onConfirm = { text, iconResource ->
+                viewModel.handleIntent(SettingsIntent.AddSetting(text, iconResource))
+            }
+        )
     }
 }
 
@@ -96,20 +110,59 @@ fun Header(modifier: Modifier = Modifier, text: String) {
 }
 
 @Composable
+fun SettingsContent(
+    state: SettingsState,
+    onLinkClick: (LinkItem) -> Unit,
+    onAddSettingClick: () -> Unit,
+    onLinkToggle: (String) -> Unit
+) {
+    LazyColumn {
+        item {
+            InternalLinksSection(
+                links = state.internalLinks,
+                selectedSettings = state.selectedLinksIds,
+                onLinkClick = onLinkClick,
+                onClickToggle = onLinkToggle
+            )
+        }
+        item {
+            ExternalLinksSection(
+                links = state.externalLinks,
+                selectedSettings = state.selectedLinksIds,
+                onLinkClick = onLinkClick,
+                onClickToggle = onLinkToggle
+            )
+        }
+        item {
+            CustomSettingsSection(
+                settings = state.customSetting,
+                selectedSettings = state.selectedLinksIds,
+                onSettingClick = onLinkClick,
+                onClickToggle = onLinkToggle
+            )
+        }
+        item { AddSettingButton(onClick = onAddSettingClick) }
+    }
+}
+
+@Composable
 fun InternalLinksSection(
     links: List<LinkItem>,
-    onLinkClick: (LinkItem) -> Unit
+    selectedSettings: Set<String>,
+    onLinkClick: (LinkItem) -> Unit,
+    onClickToggle: (String) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(bottom = PikabuDimensions.paddingLarge)
     ) {
-//        Text(
-//            text = "Внутренние ссылки",
-//            style = MaterialTheme.typography.headlineSmall,
-//            modifier = Modifier.padding(PikabuDimensions.paddingMedium)
-//        )
         links.forEach { link ->
-            LinkItemComposable(item = link, onClick = { onLinkClick(link) })
+            LinkItemComposable(
+                item = link,
+                isSelected = selectedSettings.contains(link.text),
+                onClick = {
+                    onClickToggle(link.text)
+                    onLinkClick(link)
+                })
             HorizontalDivider()
         }
     }
@@ -119,26 +172,40 @@ fun InternalLinksSection(
 fun ExternalLinksSection(
     modifier: Modifier = Modifier,
     links: List<LinkItem>,
-    onLinkClick: (LinkItem) -> Unit
+    selectedSettings: Set<String>,
+    onLinkClick: (LinkItem) -> Unit,
+    onClickToggle: (String) -> Unit
 ) {
     Column(modifier = modifier) {
         links.forEach { link ->
-            LinkItemComposable(item = link, onClick = { onLinkClick(link) })
+            LinkItemComposable(
+                item = link,
+                isSelected = selectedSettings.contains(link.text),
+                onClick = {
+                    onClickToggle(link.text)
+                    onLinkClick(link)
+                })
         }
     }
 }
 
 @Composable
 fun CustomSettingsSection(
+    modifier: Modifier = Modifier,
     settings: List<LinkItem>,
+    selectedSettings: Set<String>,
     onSettingClick: (LinkItem) -> Unit,
-    modifier: Modifier = Modifier
+    onClickToggle: (String) -> Unit,
 ) {
     Column {
         settings.forEach { setting ->
-            LinkItemComposable(item = setting, onClick = {
-                onSettingClick(setting)
-            })
+            LinkItemComposable(
+                item = setting,
+                isSelected = selectedSettings.contains(setting.text),
+                onClick = {
+                    onClickToggle(setting.text)
+                    onSettingClick(setting)
+                })
             HorizontalDivider()
         }
     }
@@ -153,13 +220,19 @@ fun AddSettingButton(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .padding(PikabuDimensions.paddingMedium)) {
+            .padding(PikabuDimensions.paddingMedium)
+    ) {
         Text(text = "Добавить настройку")
     }
 }
 
 @Composable
-fun LinkItemComposable(modifier: Modifier = Modifier, item: LinkItem, onClick: () -> Unit) {
+fun LinkItemComposable(
+    modifier: Modifier = Modifier,
+    item: LinkItem,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -168,7 +241,14 @@ fun LinkItemComposable(modifier: Modifier = Modifier, item: LinkItem, onClick: (
                 vertical = PikabuDimensions.paddingMedium,
                 horizontal = PikabuDimensions.paddingMedium
             )
-            .semantics { contentDescription = getContentDescription(item) },
+            .semantics { contentDescription = getContentDescription(item) }
+            .background(
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    Color.Transparent
+                }, shape = MaterialTheme.shapes.medium
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         LeadingIcon(iconResource = item.iconResource)
@@ -217,20 +297,70 @@ fun getContentDescription(item: LinkItem) = when (item.type) {
     is LinkType.External -> "${item.text}, нажмите для перехода на сайт"
 }
 
-val internalLinks = listOf(
-    LinkItem("Комментарии дня", R.drawable.comment, LinkType.Internal),
-    LinkItem("О нас", R.drawable.circle_exclamation, LinkType.Internal),
-    LinkItem("Внешний вид", R.drawable.palette, LinkType.Internal)
-)
+@Composable
+fun AddSettingDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, Int) -> Unit
+) {
+    var text by remember { mutableStateOf("") }
+    var selectedIcon by remember { mutableIntStateOf(R.drawable.android) }
 
-val externalLinks = listOf(
-    LinkItem("Кодекс Пикабу", R.drawable.pikabu_cake, LinkType.External),
-    LinkItem("Правила соцсети", R.drawable.megaphone, LinkType.External),
-    LinkItem("О рекомендациях", R.drawable.open_book, LinkType.External),
-    LinkItem("FAQ", R.drawable.circle_exclamation, LinkType.External),
-    LinkItem("Магазин", R.drawable.shop, LinkType.External),
-    LinkItem("Зал славы", R.drawable.prize, LinkType.External)
-)
+    val icons = listOf(
+        R.drawable.circle_exclamation,
+        R.drawable.circle_question,
+        R.drawable.shop,
+        R.drawable.arrow,
+        R.drawable.android,
+        R.drawable.prize,
+        R.drawable.palette,
+        R.drawable.pikabu_cake
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Добавить настройку") },
+        text = {
+            Column {
+                TextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = { Text("Название настройки") }
+                )
+                Spacer(modifier = Modifier.height(PikabuDimensions.paddingMedium))
+                Text("Выберите иконку:")
+                LazyRow {
+                    items(icons) { icon ->
+                        IconButton(
+                            onClick = { selectedIcon = icon }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = icon),
+                                contentDescription = null,
+                                tint = if (selectedIcon == icon) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(text, selectedIcon) }
+            ) {
+                Text("Добавить")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    )
+}
 
 //@Preview(showBackground = true)
 //@Composable

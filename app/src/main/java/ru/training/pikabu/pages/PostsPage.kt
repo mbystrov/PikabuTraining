@@ -70,7 +70,7 @@ fun PostView(modifier: Modifier = Modifier, name: String) {
             verticalAlignment = CenterVertically
         ) {
             PostIcon(name = name)
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(PikabuDimensions.paddingLarge))
             PostTitle(name = name)
         }
     }
