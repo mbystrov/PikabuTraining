@@ -38,9 +38,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import ru.training.pikabu.R
-import ru.training.pikabu.SettingsIntent
 import ru.training.pikabu.SettingsState
 import ru.training.pikabu.SettingsViewModel
+import ru.training.pikabu.Wish
 import ru.training.pikabu.showToast
 import ru.training.pikabu.ui.theme.PikabuDimensions
 
@@ -64,7 +64,7 @@ fun SettingsPage(
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.handleIntent(SettingsIntent.LoadLinks)
+        viewModel.handleWish(Wish.LoadLinks)
     }
 
     Column {
@@ -75,10 +75,10 @@ fun SettingsPage(
             SettingsContent(
                 state = state,
                 onLinkClick = { link -> showToast(context = context, message = link.text) },
-                onAddSettingClick = { viewModel.handleIntent(SettingsIntent.ShowAddSettingDialog) },
+                onAddSettingClick = { viewModel.handleWish(Wish.ShowAddSettingDialog) },
                 onLinkToggle = { linkText ->
-                    viewModel.handleIntent(
-                        SettingsIntent.ToggleSetting(
+                    viewModel.handleWish(
+                        Wish.ToggleSetting(
                             linkText
                         )
                     )
@@ -89,9 +89,9 @@ fun SettingsPage(
 
     if (state.isAddSettingDialogVisible) {
         AddSettingDialog(
-            onDismiss = { viewModel.handleIntent(SettingsIntent.ShowAddSettingDialog) },
+            onDismiss = { viewModel.handleWish(Wish.ShowAddSettingDialog) },
             onConfirm = { text, iconResource ->
-                viewModel.handleIntent(SettingsIntent.AddSetting(text, iconResource))
+                viewModel.handleWish(Wish.AddSetting(text, iconResource))
             }
         )
     }

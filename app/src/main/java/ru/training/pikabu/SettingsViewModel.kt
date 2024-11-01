@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.training.pikabu.data.repository.SettingsRepository
 import ru.training.pikabu.data.repository.SettingsRepositoryImpl
@@ -16,93 +17,93 @@ class SettingsViewModel : ViewModel() {
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
 
-    fun handleIntent(intent: SettingsIntent) {
-        when (intent) {
-            is SettingsIntent.LoadLinks -> loadLinks()
-            is SettingsIntent.AddSetting -> handleAddSettingButtonClick(
-                intent.text,
-                intent.iconResource
-            )
+    private val actor: Actor = ActorImpl(repository)
+    private val reducer: Reducer = ReducerImpl()
 
-            is SettingsIntent.ToggleSetting -> handleToggleSetting(intent.linkText)
-            is SettingsIntent.ShowAddSettingDialog -> showAddSettingDialog()
+    fun handleWish(wish: Wish) {
+        viewModelScope.launch {
+            val effect = actor.invoke(state.value, wish)
+            _state.update { reducer.invoke(state.value, effect) }
         }
     }
 
-    private fun loadLinks() {
-        viewModelScope.launch {
-            setState { copy(isLoading = true) }
+    class ActorImpl(private val repository: SettingsRepository) : Actor {
+        override suspend fun invoke(state: SettingsState, wish: Wish): Effect = when (wish) {
+            is Wish.LoadLinks -> loadLinks()
+            is Wish.ShowAddSettingDialog -> Effect.DialogVisibilityChanged(!state.isAddSettingDialogVisible)
+            is Wish.AddSetting -> addSetting(wish.text, wish.iconResource)
+            is Wish.ToggleSetting -> toggleSetting(state, wish.linkText)
+        }
+
+        private suspend fun loadLinks(): Effect =
             try {
                 val internalLinks = repository.getInternalLinks()
                 val externalLinks = repository.getExternalLinks()
-                setState {
-                    copy(
-                        internalLinks = internalLinks,
-                        externalLinks = externalLinks,
-                        isLoading = false
-                    )
-                }
+                Effect.LinksLoaded(internalLinks, externalLinks)
             } catch (e: Exception) {
-                setState {
-                    copy(
-                        error = e.message ?: "Неизвестная ошибка"
-                    )
-                }
+                Effect.ErrorLoading(e.message ?: "Неизвестная ошибка")
             }
-        }
-    }
 
-    private fun handleAddSettingButtonClick(text: String, iconResource: Int) {
-        viewModelScope.launch {
-            val newCustomSetting = LinkItem(
-                text = text,
-                iconResource = iconResource,
-                type = LinkType.Internal
-            )
+        private suspend fun addSetting(text: String, iconResource: Int): Effect {
+            val newCustomSetting =
+                LinkItem(text = text, iconResource = iconResource, type = LinkType.Internal)
             repository.addCustomSetting(newCustomSetting)
             val updatedCustomSettings = repository.getCustomSettings()
-            setState {
-                copy(
-                    customSetting = updatedCustomSettings,
-                    isAddSettingDialogVisible = false
-                )
-            }
+            return Effect.SettingAdded(updatedCustomSettings)
         }
+
+        private fun toggleSetting(state: SettingsState, linkText: String): Effect {
+            val newSelectedLinkIds = if (state.selectedLinksIds.contains(linkText)) {
+                state.selectedLinksIds - linkText
+            } else {
+                state.selectedLinksIds + linkText
+            }
+            return Effect.SettingToggled(newSelectedLinkIds)
+        }
+
     }
 
-    private fun handleToggleSetting(linkId: String) {
-        viewModelScope.launch {
-            setState {
-                val newSelectedLinkIds = if (selectedLinksIds.contains(linkId)) {
-                    selectedLinksIds - linkId
-                } else {
-                    selectedLinksIds + linkId
-                }
-                copy(selectedLinksIds = newSelectedLinkIds)
-            }
-        }
-    }
-
-    private fun showAddSettingDialog() = setState {
-        if (isAddSettingDialogVisible) {
-            copy(isAddSettingDialogVisible = false)
-        } else {
-            copy(
-                isAddSettingDialogVisible = true
+    class ReducerImpl : Reducer {
+        override fun invoke(state: SettingsState, effect: Effect): SettingsState = when (effect) {
+            is Effect.StartedLoading -> state.copy(isLoading = true)
+            is Effect.LinksLoaded -> state.copy(
+                internalLinks = effect.internalLinks,
+                externalLinks = effect.externalLinks,
+                isLoading = false
             )
+
+            is Effect.ErrorLoading -> state.copy(error = effect.error, isLoading = false)
+            is Effect.SettingAdded -> state.copy(
+                customSetting = effect.customSettings,
+                isAddSettingDialogVisible = false
+            )
+
+            is Effect.SettingToggled -> state.copy(selectedLinksIds = effect.selectedLinksIds)
+            is Effect.DialogVisibilityChanged -> state.copy(isAddSettingDialogVisible = effect.isVisible)
         }
     }
 
-    private fun setState(reducer: SettingsState.() -> SettingsState) {
-        _state.value = _state.value.reducer()
-    }
 }
 
-sealed interface SettingsIntent {
-    data object LoadLinks : SettingsIntent
-    data object ShowAddSettingDialog : SettingsIntent
-    data class AddSetting(val text: String, val iconResource: Int) : SettingsIntent
-    data class ToggleSetting(val linkText: String) : SettingsIntent
+typealias Actor = suspend (state: SettingsState, wish: Wish) -> Effect
+
+typealias Reducer = (state: SettingsState, effect: Effect) -> SettingsState
+
+sealed class Wish {
+    data object LoadLinks : Wish()
+    data object ShowAddSettingDialog : Wish()
+    data class AddSetting(val text: String, val iconResource: Int) : Wish()
+    data class ToggleSetting(val linkText: String) : Wish()
+}
+
+sealed class Effect {
+    data object StartedLoading : Effect()
+    data class LinksLoaded(val internalLinks: List<LinkItem>, val externalLinks: List<LinkItem>) :
+        Effect()
+    data class ErrorLoading(val error: String) : Effect()
+    data class SettingAdded(val customSettings: List<LinkItem>) : Effect()
+    data class SettingToggled(val selectedLinksIds: Set<String>) : Effect()
+    data class DialogVisibilityChanged(val isVisible: Boolean) : Effect()
 }
 
 data class SettingsState(
