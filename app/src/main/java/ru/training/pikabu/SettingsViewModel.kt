@@ -3,8 +3,11 @@ package ru.training.pikabu
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -17,9 +20,12 @@ class SettingsViewModel : ViewModel() {
     private val repository: SettingsRepository = SettingsRepositoryImpl()
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
+    private val _news = MutableSharedFlow<News>()
+    val news: SharedFlow<News> = _news.asSharedFlow()
 
     private val actor: Actor = ActorImpl(repository)
     private val reducer: Reducer = ReducerImpl()
+    private val newsPublisher: NewsPublisher = NewsPublisherImpl()
 
     init {
         handleWish(Wish.LoadLinks)
@@ -34,9 +40,14 @@ class SettingsViewModel : ViewModel() {
                         val effect = actor.invoke(state.value, wish)
                         _state.update { reducer.invoke(it, effect) }
                     }
+
                     else -> {
                         val effect = actor.invoke(state.value, wish)
-                        _state.update { reducer.invoke(it, effect) }
+                        val newState = reducer.invoke(state.value, effect)
+                        _state.update { newState }
+                        newsPublisher.invoke(wish, effect, newState)?.let { news ->
+                            _news.emit(news)
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -55,7 +66,7 @@ class SettingsViewModel : ViewModel() {
 
         private suspend fun loadLinks(): Effect =
             try {
-                delay(300)
+                delay(4000)
                 Effect.LinksLoaded(
                     internalLinks = repository.getInternalLinks(),
                     externalLinks = repository.getExternalLinks()
@@ -117,11 +128,29 @@ class SettingsViewModel : ViewModel() {
         }
     }
 
+    class NewsPublisherImpl() : NewsPublisher {
+        override fun invoke(wish: Wish, effect: Effect, state: SettingsState): News? {
+            return when {
+                effect is Effect.SettingToggled && wish is Wish.ToggleSetting -> {
+                    val isSelected = state.selectedLinksIds.contains(wish.linkText)
+                    val status = if (isSelected) "выбран" else "отключён"
+                    News.ShowToast("Элемент ${wish.linkText} $status")
+                }
+
+                else -> null
+            }
+        }
+
+    }
+
 }
 
 typealias Actor = suspend (state: SettingsState, wish: Wish) -> Effect
 
 typealias Reducer = (state: SettingsState, effect: Effect) -> SettingsState
+
+typealias NewsPublisher =
+            (wish: Wish, effect: Effect, state: SettingsState) -> News?
 
 sealed class Wish {
     data object LoadLinks : Wish()
@@ -139,6 +168,10 @@ sealed class Effect {
     data class SettingAdded(val customSettings: List<LinkItem>) : Effect()
     data class SettingToggled(val selectedLinksIds: Set<String>) : Effect()
     data class DialogVisibilityChanged(val isVisible: Boolean) : Effect()
+}
+
+sealed class News {
+    data class ShowToast(val toastMessage: String) : News()
 }
 
 data class SettingsState(

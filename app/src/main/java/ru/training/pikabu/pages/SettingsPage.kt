@@ -1,6 +1,6 @@
 package ru.training.pikabu.pages
 
-import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import ru.training.pikabu.News
 import ru.training.pikabu.R
 import ru.training.pikabu.SettingsState
 import ru.training.pikabu.SettingsViewModel
@@ -65,20 +66,20 @@ fun SettingsPage(
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.handleWish(Wish.LoadLinks)
+        viewModel.news.collect { news ->
+            when (news) {
+                is News.ShowToast -> showToast(context, news.toastMessage, Toast.LENGTH_SHORT)
+            }
+        }
     }
 
     Column {
         Header(text = "Еще")
-        Log.d("MB", "isLoading сейчас:${state.isLoading}")
         if (state.isLoading) {
-            Log.d("MB", "До значка загрузки")
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-            Log.d("MB", "После значка загрузки")
         } else {
             SettingsContent(
                 state = state,
-                onLinkClick = { link -> showToast(context = context, message = link.text) },
                 onAddSettingClick = { viewModel.handleWish(Wish.ShowAddSettingDialog) },
                 onLinkToggle = { linkText ->
                     viewModel.handleWish(
@@ -116,7 +117,6 @@ fun Header(modifier: Modifier = Modifier, text: String) {
 @Composable
 fun SettingsContent(
     state: SettingsState,
-    onLinkClick: (LinkItem) -> Unit,
     onAddSettingClick: () -> Unit,
     onLinkToggle: (String) -> Unit
 ) {
@@ -125,7 +125,6 @@ fun SettingsContent(
             InternalLinksSection(
                 links = state.internalLinks,
                 selectedSettings = state.selectedLinksIds,
-                onLinkClick = onLinkClick,
                 onClickToggle = onLinkToggle
             )
         }
@@ -133,7 +132,6 @@ fun SettingsContent(
             ExternalLinksSection(
                 links = state.externalLinks,
                 selectedSettings = state.selectedLinksIds,
-                onLinkClick = onLinkClick,
                 onClickToggle = onLinkToggle
             )
         }
@@ -141,7 +139,6 @@ fun SettingsContent(
             CustomSettingsSection(
                 settings = state.customSetting,
                 selectedSettings = state.selectedLinksIds,
-                onSettingClick = onLinkClick,
                 onClickToggle = onLinkToggle
             )
         }
@@ -153,7 +150,6 @@ fun SettingsContent(
 fun InternalLinksSection(
     links: List<LinkItem>,
     selectedSettings: Set<String>,
-    onLinkClick: (LinkItem) -> Unit,
     onClickToggle: (String) -> Unit
 ) {
     Column(
@@ -165,7 +161,6 @@ fun InternalLinksSection(
                 isSelected = selectedSettings.contains(link.text),
                 onClick = {
                     onClickToggle(link.text)
-                    onLinkClick(link)
                 })
             HorizontalDivider()
         }
@@ -177,7 +172,6 @@ fun ExternalLinksSection(
     modifier: Modifier = Modifier,
     links: List<LinkItem>,
     selectedSettings: Set<String>,
-    onLinkClick: (LinkItem) -> Unit,
     onClickToggle: (String) -> Unit
 ) {
     Column(modifier = modifier) {
@@ -187,7 +181,6 @@ fun ExternalLinksSection(
                 isSelected = selectedSettings.contains(link.text),
                 onClick = {
                     onClickToggle(link.text)
-                    onLinkClick(link)
                 })
         }
     }
@@ -198,7 +191,6 @@ fun CustomSettingsSection(
     modifier: Modifier = Modifier,
     settings: List<LinkItem>,
     selectedSettings: Set<String>,
-    onSettingClick: (LinkItem) -> Unit,
     onClickToggle: (String) -> Unit,
 ) {
     Column {
@@ -208,7 +200,6 @@ fun CustomSettingsSection(
                 isSelected = selectedSettings.contains(setting.text),
                 onClick = {
                     onClickToggle(setting.text)
-                    onSettingClick(setting)
                 })
             HorizontalDivider()
         }
@@ -226,7 +217,6 @@ fun AddSettingButton(
             .fillMaxWidth()
             .padding(PikabuDimensions.paddingMedium)
     ) {
-        Log.d("MB", "Отображения текста кнопки")
         Text(text = "Добавить настройку")
     }
 }
