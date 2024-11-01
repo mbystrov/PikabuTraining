@@ -1,5 +1,6 @@
 package ru.training.pikabu.pages
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -69,8 +70,11 @@ fun SettingsPage(
 
     Column {
         Header(text = "Еще")
+        Log.d("MB", "isLoading сейчас:${state.isLoading}")
         if (state.isLoading) {
+            Log.d("MB", "До значка загрузки")
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            Log.d("MB", "После значка загрузки")
         } else {
             SettingsContent(
                 state = state,
@@ -84,17 +88,17 @@ fun SettingsPage(
                     )
                 }
             )
+            if (state.isAddSettingDialogVisible) {
+                AddSettingDialog(
+                    onDismiss = { viewModel.handleWish(Wish.ShowAddSettingDialog) },
+                    onConfirm = { text, iconResource ->
+                        viewModel.handleWish(Wish.AddSetting(text, iconResource))
+                    }
+                )
+            }
         }
     }
 
-    if (state.isAddSettingDialogVisible) {
-        AddSettingDialog(
-            onDismiss = { viewModel.handleWish(Wish.ShowAddSettingDialog) },
-            onConfirm = { text, iconResource ->
-                viewModel.handleWish(Wish.AddSetting(text, iconResource))
-            }
-        )
-    }
 }
 
 @Composable
@@ -222,6 +226,7 @@ fun AddSettingButton(
             .fillMaxWidth()
             .padding(PikabuDimensions.paddingMedium)
     ) {
+        Log.d("MB", "Отображения текста кнопки")
         Text(text = "Добавить настройку")
     }
 }

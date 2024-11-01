@@ -2,6 +2,7 @@ package ru.training.pikabu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,10 +21,27 @@ class SettingsViewModel : ViewModel() {
     private val actor: Actor = ActorImpl(repository)
     private val reducer: Reducer = ReducerImpl()
 
+    init {
+        handleWish(Wish.LoadLinks)
+    }
+
     fun handleWish(wish: Wish) {
         viewModelScope.launch {
-            val effect = actor.invoke(state.value, wish)
-            _state.update { reducer.invoke(state.value, effect) }
+            try {
+                when (wish) {
+                    is Wish.LoadLinks -> {
+                        _state.update { reducer.invoke(it, Effect.StartedLoading) }
+                        val effect = actor.invoke(state.value, wish)
+                        _state.update { reducer.invoke(it, effect) }
+                    }
+                    else -> {
+                        val effect = actor.invoke(state.value, wish)
+                        _state.update { reducer.invoke(it, effect) }
+                    }
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message ?: "Неизвестная ошибка") }
+            }
         }
     }
 
@@ -37,19 +55,26 @@ class SettingsViewModel : ViewModel() {
 
         private suspend fun loadLinks(): Effect =
             try {
-                val internalLinks = repository.getInternalLinks()
-                val externalLinks = repository.getExternalLinks()
-                Effect.LinksLoaded(internalLinks, externalLinks)
+                delay(300)
+                Effect.LinksLoaded(
+                    internalLinks = repository.getInternalLinks(),
+                    externalLinks = repository.getExternalLinks()
+                )
             } catch (e: Exception) {
-                Effect.ErrorLoading(e.message ?: "Неизвестная ошибка")
+                Effect.Error(e.message ?: "Неизвестная ошибка")
             }
 
         private suspend fun addSetting(text: String, iconResource: Int): Effect {
-            val newCustomSetting =
-                LinkItem(text = text, iconResource = iconResource, type = LinkType.Internal)
-            repository.addCustomSetting(newCustomSetting)
-            val updatedCustomSettings = repository.getCustomSettings()
-            return Effect.SettingAdded(updatedCustomSettings)
+            return try {
+                require(text.isNotEmpty()) { "Текст настройки не может быть пустым" }
+                val newCustomSetting =
+                    LinkItem(text = text, iconResource = iconResource, type = LinkType.Internal)
+                repository.addCustomSetting(newCustomSetting)
+                val updatedCustomSettings = repository.getCustomSettings()
+                return Effect.SettingAdded(updatedCustomSettings)
+            } catch (e: Exception) {
+                Effect.Error(e.message ?: "Ошибка добавления настройки")
+            }
         }
 
         private fun toggleSetting(state: SettingsState, linkText: String): Effect {
@@ -65,21 +90,30 @@ class SettingsViewModel : ViewModel() {
 
     class ReducerImpl : Reducer {
         override fun invoke(state: SettingsState, effect: Effect): SettingsState = when (effect) {
-            is Effect.StartedLoading -> state.copy(isLoading = true)
+            is Effect.StartedLoading -> state.copy(isLoading = true, error = null)
             is Effect.LinksLoaded -> state.copy(
                 internalLinks = effect.internalLinks,
                 externalLinks = effect.externalLinks,
-                isLoading = false
+                isLoading = false,
+                error = null
             )
 
-            is Effect.ErrorLoading -> state.copy(error = effect.error, isLoading = false)
+            is Effect.Error -> state.copy(error = effect.errorMessage, isLoading = false)
             is Effect.SettingAdded -> state.copy(
                 customSetting = effect.customSettings,
-                isAddSettingDialogVisible = false
+                isAddSettingDialogVisible = false,
+                error = null
             )
 
-            is Effect.SettingToggled -> state.copy(selectedLinksIds = effect.selectedLinksIds)
-            is Effect.DialogVisibilityChanged -> state.copy(isAddSettingDialogVisible = effect.isVisible)
+            is Effect.SettingToggled -> state.copy(
+                selectedLinksIds = effect.selectedLinksIds,
+                error = null
+            )
+
+            is Effect.DialogVisibilityChanged -> state.copy(
+                isAddSettingDialogVisible = effect.isVisible,
+                error = null
+            )
         }
     }
 
@@ -100,7 +134,8 @@ sealed class Effect {
     data object StartedLoading : Effect()
     data class LinksLoaded(val internalLinks: List<LinkItem>, val externalLinks: List<LinkItem>) :
         Effect()
-    data class ErrorLoading(val error: String) : Effect()
+
+    data class Error(val errorMessage: String) : Effect()
     data class SettingAdded(val customSettings: List<LinkItem>) : Effect()
     data class SettingToggled(val selectedLinksIds: Set<String>) : Effect()
     data class DialogVisibilityChanged(val isVisible: Boolean) : Effect()
