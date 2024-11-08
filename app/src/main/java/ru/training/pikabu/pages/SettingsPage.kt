@@ -91,6 +91,10 @@ fun SettingsPage(
             )
             if (state.isAddSettingDialogVisible) {
                 AddSettingDialog(
+                    state = state,
+                    onTextChange = { newSettingName ->
+                        viewModel.handleWish(Wish.UpdateAddSettingDialogText(newSettingName))
+                    },
                     onDismiss = { viewModel.handleWish(Wish.ShowAddSettingDialog) },
                     onConfirm = { text, iconResource ->
                         viewModel.handleWish(Wish.AddSetting(text, iconResource))
@@ -294,10 +298,11 @@ fun getContentDescription(item: LinkItem) = when (item.type) {
 
 @Composable
 fun AddSettingDialog(
+    state: SettingsState,
+    onTextChange: (String) -> Unit,
     onDismiss: () -> Unit,
     onConfirm: (String, Int) -> Unit
 ) {
-    var text by remember { mutableStateOf("") }
     var selectedIcon by remember { mutableIntStateOf(R.drawable.android) }
 
     val icons = listOf(
@@ -317,8 +322,8 @@ fun AddSettingDialog(
         text = {
             Column {
                 TextField(
-                    value = text,
-                    onValueChange = { text = it },
+                    value = state.addSettingDialogText,
+                    onValueChange = { onTextChange(it) },
                     label = { Text("Название настройки") }
                 )
                 Spacer(modifier = Modifier.height(PikabuDimensions.paddingMedium))
@@ -344,7 +349,7 @@ fun AddSettingDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(text, selectedIcon) }
+                onClick = { onConfirm(state.addSettingDialogText, selectedIcon) }
             ) {
                 Text("Добавить")
             }

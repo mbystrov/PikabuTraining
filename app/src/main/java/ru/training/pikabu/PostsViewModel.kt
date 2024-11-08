@@ -1,5 +1,6 @@
 package ru.training.pikabu
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,22 @@ class PostsViewModel : ViewModel() {
     private val _selectedTags = MutableStateFlow<Set<String>>(emptySet())
     val selectedTags: StateFlow<Set<String>> = _selectedTags
 
+    private val _tagText = MutableStateFlow("")
+    val tagText: StateFlow<String> = _tagText
+
+    init {
+        Log.e("MB", "VM created")
+    }
+
+    override fun onCleared() {
+        Log.e("MB", "VM cleared")
+        super.onCleared()
+    }
+
+    fun updateTagText(text: String) {
+        _tagText.value = text
+    }
+
     fun toggleTag(tagValue: String) {
         viewModelScope.launch {
             _selectedTags.value = _selectedTags.value.toMutableSet()
@@ -40,6 +57,7 @@ class PostsViewModel : ViewModel() {
             )
             tagRepository.createTag(newTag)
             refreshTagsData()
+            _tagText.value = ""
         }
     }
 

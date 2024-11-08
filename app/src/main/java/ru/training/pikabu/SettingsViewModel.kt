@@ -58,6 +58,7 @@ class SettingsViewModel : ViewModel() {
                 is Wish.LoadLinks -> emitAll(loadLinks())
                 is Wish.ShowAddSettingDialog -> emit(Effect.DialogVisibilityChanged(!state.isAddSettingDialogVisible))
                 is Wish.AddSetting -> emitAll(addSetting(wish.text, wish.iconResource))
+                is Wish.UpdateAddSettingDialogText -> emit(Effect.AddSettingDialogTextUpdated(wish.text))
                 is Wish.ToggleSetting -> emit(toggleSetting(state, wish.linkText))
             }
         }
@@ -122,10 +123,13 @@ class SettingsViewModel : ViewModel() {
                 error = null
             )
 
+            is Effect.AddSettingDialogTextUpdated -> state.copy(addSettingDialogText = effect.text)
+
             is Effect.DialogVisibilityChanged -> state.copy(
                 isAddSettingDialogVisible = effect.isVisible,
                 error = null
             )
+
         }
     }
 
@@ -158,6 +162,7 @@ sealed class Wish {
     data object LoadLinks : Wish()
     data object ShowAddSettingDialog : Wish()
     data class AddSetting(val text: String, val iconResource: Int) : Wish()
+    data class UpdateAddSettingDialogText(val text: String) : Wish()
     data class ToggleSetting(val linkText: String) : Wish()
 }
 
@@ -169,6 +174,7 @@ sealed class Effect {
     data class Error(val errorMessage: String) : Effect()
     data class SettingAdded(val customSettings: List<LinkItem>) : Effect()
     data class SettingToggled(val selectedLinksIds: Set<String>) : Effect()
+    data class AddSettingDialogTextUpdated(val text: String) : Effect()
     data class DialogVisibilityChanged(val isVisible: Boolean) : Effect()
 }
 
@@ -181,6 +187,7 @@ data class SettingsState(
     val externalLinks: List<LinkItem> = emptyList(),
     val customSetting: List<LinkItem> = emptyList(),
     val selectedLinksIds: Set<String> = emptySet(),
+    val addSettingDialogText: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
     val isAddSettingDialogVisible: Boolean = false

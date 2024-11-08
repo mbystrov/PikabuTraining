@@ -31,9 +31,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
@@ -51,6 +48,7 @@ fun PostsPage(modifier: Modifier = Modifier, viewModel: PostsViewModel) {
     val postsList by viewModel.postsData.collectAsState()
     val tagList by viewModel.tagsData.collectAsState()
     val selectedTags by viewModel.selectedTags.collectAsState()
+    val tagText by viewModel.tagText.collectAsState()
 
     Column(
         modifier = modifier.fillMaxSize()
@@ -59,6 +57,8 @@ fun PostsPage(modifier: Modifier = Modifier, viewModel: PostsViewModel) {
         TagsGrid(
             tags = tagList.map { it.tagValue },
             selectedTags = selectedTags,
+            tagText = tagText,
+            onTagTextChange = { tagText -> viewModel.updateTagText(tagText) },
             onTagClick = { tagValue -> viewModel.toggleTag(tagValue) },
             onButtonClick = { tagValue -> viewModel.createTag(tagValue) },
             onDelete = { tagValue -> viewModel.deleteTag(tagValue) }
@@ -75,12 +75,13 @@ fun PostsPage(modifier: Modifier = Modifier, viewModel: PostsViewModel) {
 fun TagsGrid(
     tags: List<String>,
     selectedTags: Set<String>,
+    tagText: String,
+    onTagTextChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     onTagClick: (String) -> Unit,
     onButtonClick: (String) -> Unit,
     onDelete: (String) -> Unit
 ) {
-    var text by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
 
     Box(
@@ -109,11 +110,11 @@ fun TagsGrid(
             }
             Row {
                 TextField(
-                    value = text,
-                    onValueChange = { text = it },
+                    value = tagText,
+                    onValueChange = onTagTextChange,
                     label = { Text(text = "Имя тэга") }
                 )
-                Button(onClick = { onButtonClick(text) }) {
+                Button(onClick = { onButtonClick(tagText) }) {
                     Text(text = "Добавить тэг")
                 }
             }
