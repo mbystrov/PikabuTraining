@@ -22,26 +22,32 @@ import ru.training.pikabu.pages.PostsPage
 import ru.training.pikabu.pages.SettingsPage
 
 @Composable
-fun MainScreen(modifier: Modifier = Modifier) {
+fun MainScreen(
+    postViewModel: PostsViewModel,
+    settingsViewModel: SettingsViewModel,
+    currentScreenIndex: Int,
+    onScreenChange: (Int) -> Unit
+) {
 
     val navItemList = listOf(
         NavItem(Icons.Default.Home),
         NavItem(Icons.Default.MoreVert),
     )
 
-    var selectedIndex by remember {
-        mutableIntStateOf(0)
-    }
+    var selectedIndex by remember { mutableIntStateOf(currentScreenIndex) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar(modifier = Modifier.height(32.dp)) {
+            NavigationBar(
+                modifier = Modifier.height(32.dp),
+            ) {
                 navItemList.forEachIndexed { index, navItem ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
                         onClick = {
                             selectedIndex = index
+                            onScreenChange(index)
                         },
                         icon = {
                             Icon(
@@ -54,16 +60,26 @@ fun MainScreen(modifier: Modifier = Modifier) {
             }
         }
     ) { innerPadding ->
-        ContentScreen(modifier = modifier.padding(innerPadding), selectedIndex = selectedIndex)
+        ContentScreen(
+            modifier = Modifier.padding(innerPadding),
+            selectedIndex = selectedIndex,
+            postsViewModel = postViewModel,
+            settingsViewModel = settingsViewModel
+        )
     }
 }
 
 @Composable
-fun ContentScreen(modifier: Modifier = Modifier, selectedIndex: Int) {
+fun ContentScreen(
+    modifier: Modifier = Modifier,
+    selectedIndex: Int,
+    postsViewModel: PostsViewModel,
+    settingsViewModel: SettingsViewModel
+) {
     Box(modifier = modifier) {
         when (selectedIndex) {
-            0 -> PostsPage()
-            1 -> SettingsPage()
+            0 -> PostsPage(viewModel = postsViewModel)
+            1 -> SettingsPage(viewModel = settingsViewModel)
         }
     }
 }
