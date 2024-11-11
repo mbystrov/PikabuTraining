@@ -1,6 +1,6 @@
 package ru.training.pikabu.data.repository
 
-import ru.training.pikabu.pages.LinkItem
+import ru.training.pikabu.data.model.LinkItem
 
 interface SettingsRepository {
     suspend fun getInternalLinks(): List<LinkItem>

@@ -15,14 +15,16 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ru.training.pikabu.data.api.RetrofitClient
+import ru.training.pikabu.data.model.LinkItem
+import ru.training.pikabu.data.model.LinkType
 import ru.training.pikabu.data.repository.SettingsRepository
 import ru.training.pikabu.data.repository.SettingsRepositoryImpl
-import ru.training.pikabu.pages.LinkItem
-import ru.training.pikabu.pages.LinkType
 
 /* Это вариант MVI с использованием Flow в акторе, т.о. точка входа остаётся она - handleWish() и действия из неё передаются в actor и reducer */
 class SettingsViewModel : ViewModel() {
-    private val repository: SettingsRepository = SettingsRepositoryImpl()
+    private val repository: SettingsRepository =
+        SettingsRepositoryImpl(RetrofitClient.apiService)
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
     private val _news = MutableSharedFlow<News>()

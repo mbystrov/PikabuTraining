@@ -28,7 +28,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,19 +42,10 @@ import ru.training.pikabu.R
 import ru.training.pikabu.SettingsState
 import ru.training.pikabu.SettingsViewModel
 import ru.training.pikabu.Wish
+import ru.training.pikabu.data.model.LinkItem
+import ru.training.pikabu.data.model.LinkType
 import ru.training.pikabu.showToast
 import ru.training.pikabu.ui.theme.PikabuDimensions
-
-sealed class LinkType {
-    data object Internal : LinkType()
-    data object External : LinkType()
-}
-
-data class LinkItem(
-    val text: String,
-    val iconResource: Int,
-    val type: LinkType
-)
 
 @Composable
 fun SettingsPage(
