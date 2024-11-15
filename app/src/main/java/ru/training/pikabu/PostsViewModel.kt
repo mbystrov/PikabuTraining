@@ -1,21 +1,20 @@
 package ru.training.pikabu
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import ru.training.pikabu.data.api.RetrofitClient
 import ru.training.pikabu.data.model.Post
 import ru.training.pikabu.data.model.Tag
 import ru.training.pikabu.data.repository.PostRepository
 import ru.training.pikabu.data.repository.PostRepositoryImpl
 import ru.training.pikabu.data.repository.TagRepository
 import ru.training.pikabu.data.repository.TagRepositoryImpl
-import java.util.UUID
 
 class PostsViewModel : ViewModel() {
-    private val postRepository: PostRepository = PostRepositoryImpl()
+    private val postRepository: PostRepository = PostRepositoryImpl(RetrofitClient.apiService)
     private val _postsData = MutableStateFlow<List<Post>>(emptyList())
     val postsData: StateFlow<List<Post>> = _postsData
 
@@ -30,12 +29,7 @@ class PostsViewModel : ViewModel() {
     val tagText: StateFlow<String> = _tagText
 
     init {
-        Log.e("MB", "VM created")
-    }
-
-    override fun onCleared() {
-        Log.e("MB", "VM cleared")
-        super.onCleared()
+        refreshPostsData()
     }
 
     fun updateTagText(text: String) {
@@ -81,7 +75,7 @@ class PostsViewModel : ViewModel() {
     fun createPost() {
         viewModelScope.launch {
             val newPost = Post(
-                "${UUID.randomUUID()}",
+                kotlin.random.Random(1).nextInt(),
                 "Post ${_postsData.value.size + 1}"
             )
             postRepository.addPost(newPost)
