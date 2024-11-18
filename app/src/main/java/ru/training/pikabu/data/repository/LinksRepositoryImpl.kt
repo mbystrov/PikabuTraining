@@ -5,16 +5,16 @@ import ru.training.pikabu.data.dao.LinkItemDao
 import ru.training.pikabu.data.model.LinkItem
 import ru.training.pikabu.data.model.LinkType
 
-class SettingsRepositoryImpl(
+class LinksRepositoryImpl(
     private val apiService: ApiService,
     private val linkItemDao: LinkItemDao
-) : SettingsRepository {
+) : LinksRepository {
 
     override suspend fun getInternalLinks(): List<LinkItem> = getLinks(LinkType.Internal)
 
     override suspend fun getExternalLinks(): List<LinkItem> = getLinks(LinkType.External)
 
-    override suspend fun getCustomSettings(): List<LinkItem> = getLinks(LinkType.Custom)
+    override suspend fun getCustomLinks(): List<LinkItem> = getLinks(LinkType.Custom)
 
     private suspend fun getLinks(linkType: LinkType): List<LinkItem> {
         return try {
@@ -31,7 +31,7 @@ class SettingsRepositoryImpl(
         }
     }
 
-    override suspend fun addCustomSetting(setting: LinkItem) {
-        linkItemDao.addLink(setting)
+    override suspend fun addCustomLink(linkItem: LinkItem) {
+        linkItemDao.addLink(linkItem)
     }
 }
