@@ -1,6 +1,8 @@
 [versions]
 agp = "8.5.0"
 kotlin = "1.9.0"
+ksp = "1.9.0-1.0.13"
+
 coreKtx = "1.13.1"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -11,6 +13,7 @@ composeBom = "2024.04.01"
 retrofit2 = "2.11.0"
 kotlinx-serialization = "1.6.3"
 okhttp3 = "4.12.0"
+room = "2.6.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -31,8 +34,13 @@ retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = 
 converter-kotlinx-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit2" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp3" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+room-common = { group = "androidx.room", name = "room-common", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+google-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 

@@ -1,20 +1,33 @@
 package ru.training.pikabu
 
+import android.app.Application
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import ru.training.pikabu.data.api.RetrofitClient
+import ru.training.pikabu.data.db.AppDatabase
 import ru.training.pikabu.data.model.Post
 import ru.training.pikabu.data.model.Tag
 import ru.training.pikabu.data.repository.PostRepository
 import ru.training.pikabu.data.repository.PostRepositoryImpl
 import ru.training.pikabu.data.repository.TagRepository
 import ru.training.pikabu.data.repository.TagRepositoryImpl
+import kotlin.random.Random
 
-class PostsViewModel : ViewModel() {
-    private val postRepository: PostRepository = PostRepositoryImpl(RetrofitClient.apiService)
+class PostsViewModel(
+    application: PikabuApplication
+) : AndroidViewModel(application) {
+    private val appDatabase = AppDatabase.getDatabase(application)
+    private val postDao = appDatabase.postDao()
+    private val postRepository: PostRepository =
+        PostRepositoryImpl(RetrofitClient.apiService, postDao)
     private val _postsData = MutableStateFlow<List<Post>>(emptyList())
     val postsData: StateFlow<List<Post>> = _postsData
 
@@ -74,8 +87,10 @@ class PostsViewModel : ViewModel() {
 
     fun createPost() {
         viewModelScope.launch {
+            val newPostId = Random.nextInt(1,1001)
+            Log.e("MB", "New post id: $newPostId")
             val newPost = Post(
-                kotlin.random.Random(1).nextInt(),
+                newPostId,
                 "Post ${_postsData.value.size + 1}"
             )
             postRepository.addPost(newPost)
@@ -96,6 +111,14 @@ class PostsViewModel : ViewModel() {
         viewModelScope.launch {
             val posts = postRepository.getPosts()
             _postsData.value = posts
+        }
+    }
+
+    companion object {
+        fun factory(application: PikabuApplication): ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                PostsViewModel(application)
+            }
         }
     }
 }

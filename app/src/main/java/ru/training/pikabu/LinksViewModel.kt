@@ -1,9 +1,11 @@
 package ru.training.pikabu
 
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,17 +18,20 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.training.pikabu.data.api.RetrofitClient
+import ru.training.pikabu.data.db.AppDatabase
 import ru.training.pikabu.data.model.LinkItem
 import ru.training.pikabu.data.model.LinkType
-import ru.training.pikabu.data.repository.SettingsRepository
-import ru.training.pikabu.data.repository.SettingsRepositoryImpl
+import ru.training.pikabu.data.repository.LinksRepository
+import ru.training.pikabu.data.repository.LinksRepositoryImpl
 
 /* Это вариант MVI с использованием Flow в акторе, т.о. точка входа остаётся она - handleWish() и действия из неё передаются в actor и reducer */
-class SettingsViewModel : ViewModel() {
-    private val repository: SettingsRepository =
-        SettingsRepositoryImpl(RetrofitClient.apiService)
-    private val _state = MutableStateFlow(SettingsState())
-    val state: StateFlow<SettingsState> = _state.asStateFlow()
+class LinksViewModel(application: PikabuApplication) : AndroidViewModel(application) {
+    private val appDatabase = AppDatabase.getDatabase(application)
+    private val linkItemDao = appDatabase.linkItemDao()
+    private val repository: LinksRepository =
+        LinksRepositoryImpl(RetrofitClient.apiService, linkItemDao)
+    private val _state = MutableStateFlow(LinksState())
+    val state: StateFlow<LinksState> = _state.asStateFlow()
     private val _news = MutableSharedFlow<News>()
     val news: SharedFlow<News> = _news.asSharedFlow()
 
@@ -54,25 +59,25 @@ class SettingsViewModel : ViewModel() {
         }
     }
 
-    class ActorImpl(private val repository: SettingsRepository) : Actor {
-        override suspend fun invoke(state: SettingsState, wish: Wish): Flow<Effect> = flow {
+    class ActorImpl(private val repository: LinksRepository) : Actor {
+        override suspend fun invoke(state: LinksState, wish: Wish): Flow<Effect> = flow {
             when (wish) {
                 is Wish.LoadLinks -> emitAll(loadLinks())
-                is Wish.ShowAddSettingDialog -> emit(Effect.DialogVisibilityChanged(!state.isAddSettingDialogVisible))
-                is Wish.AddSetting -> emitAll(addSetting(wish.text, wish.iconResource))
-                is Wish.UpdateAddSettingDialogText -> emit(Effect.AddSettingDialogTextUpdated(wish.text))
-                is Wish.ToggleSetting -> emit(toggleSetting(state, wish.linkText))
+                is Wish.ShowAddCustomLinkDialog -> emit(Effect.DialogVisibilityChanged(!state.isAddCustomLinkDialogVisible))
+                is Wish.AddCustomLink -> emitAll(addCustomLink(wish.text, wish.iconResource))
+                is Wish.UpdateAddCustomLinkDialogText -> emit(Effect.AddCustomLinkDialogTextUpdated(wish.text))
+                is Wish.ToggleLink -> emit(toggleCustomLink(state, wish.linkText))
             }
         }
 
         private suspend fun loadLinks(): Flow<Effect> = flow {
             try {
                 emit(Effect.StartedLoading)
-                delay(4000)
                 emit(
                     Effect.LinksLoaded(
                         internalLinks = repository.getInternalLinks(),
-                        externalLinks = repository.getExternalLinks()
+                        externalLinks = repository.getExternalLinks(),
+                        customLinks = repository.getCustomLinks()
                     )
                 )
             } catch (e: Exception) {
@@ -80,55 +85,56 @@ class SettingsViewModel : ViewModel() {
             }
         }
 
-        private suspend fun addSetting(text: String, iconResource: Int): Flow<Effect> = flow {
+        private suspend fun addCustomLink(text: String, iconResource: Int): Flow<Effect> = flow {
             try {
                 require(text.isNotEmpty()) { "Текст настройки не может быть пустым" }
-                val newCustomSetting =
-                    LinkItem(text = text, iconResource = iconResource, type = LinkType.Internal)
-                repository.addCustomSetting(newCustomSetting)
-                val updatedCustomSettings = repository.getCustomSettings()
-                emit(Effect.SettingAdded(updatedCustomSettings))
+                val newCustomLink =
+                    LinkItem(text = text, iconResource = iconResource, type = LinkType.Custom)
+                repository.addCustomLink(newCustomLink)
+                val updatedCustomLinks = repository.getCustomLinks()
+                emit(Effect.CustomLinkAdded(updatedCustomLinks))
             } catch (e: Exception) {
                 emit(Effect.Error(e.message ?: "Ошибка добавления настройки"))
             }
         }
 
-        private fun toggleSetting(state: SettingsState, linkText: String): Effect {
+        private fun toggleCustomLink(state: LinksState, linkText: String): Effect {
             val newSelectedLinkIds = if (state.selectedLinksIds.contains(linkText)) {
                 state.selectedLinksIds - linkText
             } else {
                 state.selectedLinksIds + linkText
             }
-            return Effect.SettingToggled(newSelectedLinkIds)
+            return Effect.LinkToggled(newSelectedLinkIds)
         }
     }
 
     class ReducerImpl : Reducer {
-        override fun invoke(state: SettingsState, effect: Effect): SettingsState = when (effect) {
+        override fun invoke(state: LinksState, effect: Effect): LinksState = when (effect) {
             is Effect.StartedLoading -> state.copy(isLoading = true, error = null)
             is Effect.LinksLoaded -> state.copy(
                 internalLinks = effect.internalLinks,
                 externalLinks = effect.externalLinks,
+                customLinks = effect.customLinks,
                 isLoading = false,
                 error = null
             )
 
             is Effect.Error -> state.copy(error = effect.errorMessage, isLoading = false)
-            is Effect.SettingAdded -> state.copy(
-                customSetting = effect.customSettings,
-                isAddSettingDialogVisible = false,
+            is Effect.CustomLinkAdded -> state.copy(
+                customLinks = effect.customLinks,
+                isAddCustomLinkDialogVisible = false,
                 error = null
             )
 
-            is Effect.SettingToggled -> state.copy(
+            is Effect.LinkToggled -> state.copy(
                 selectedLinksIds = effect.selectedLinksIds,
                 error = null
             )
 
-            is Effect.AddSettingDialogTextUpdated -> state.copy(addSettingDialogText = effect.text)
+            is Effect.AddCustomLinkDialogTextUpdated -> state.copy(addCustomLinkDialogText = effect.text)
 
             is Effect.DialogVisibilityChanged -> state.copy(
-                isAddSettingDialogVisible = effect.isVisible,
+                isAddCustomLinkDialogVisible = effect.isVisible,
                 error = null
             )
 
@@ -136,9 +142,9 @@ class SettingsViewModel : ViewModel() {
     }
 
     class NewsPublisherImpl() : NewsPublisher {
-        override fun invoke(wish: Wish, effect: Effect, state: SettingsState): News? {
+        override fun invoke(wish: Wish, effect: Effect, state: LinksState): News? {
             return when {
-                effect is Effect.SettingToggled && wish is Wish.ToggleSetting -> {
+                effect is Effect.LinkToggled && wish is Wish.ToggleLink -> {
                     val isSelected = state.selectedLinksIds.contains(wish.linkText)
                     val status = if (isSelected) "выбран" else "отключён"
                     Log.d("MB", "status: $status")
@@ -151,32 +157,43 @@ class SettingsViewModel : ViewModel() {
 
     }
 
+    companion object {
+        fun factory(application: PikabuApplication): ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                LinksViewModel(application)
+            }
+        }
+    }
 }
 
-typealias Actor = suspend (state: SettingsState, wish: Wish) -> Flow<Effect>
+typealias Actor = suspend (state: LinksState, wish: Wish) -> Flow<Effect>
 
-typealias Reducer = (state: SettingsState, effect: Effect) -> SettingsState
+typealias Reducer = (state: LinksState, effect: Effect) -> LinksState
 
 typealias NewsPublisher =
-            (wish: Wish, effect: Effect, state: SettingsState) -> News?
+            (wish: Wish, effect: Effect, state: LinksState) -> News?
 
 sealed class Wish {
     data object LoadLinks : Wish()
-    data object ShowAddSettingDialog : Wish()
-    data class AddSetting(val text: String, val iconResource: Int) : Wish()
-    data class UpdateAddSettingDialogText(val text: String) : Wish()
-    data class ToggleSetting(val linkText: String) : Wish()
+    data object ShowAddCustomLinkDialog : Wish()
+    data class AddCustomLink(val text: String, val iconResource: Int) : Wish()
+    data class UpdateAddCustomLinkDialogText(val text: String) : Wish()
+    data class ToggleLink(val linkText: String) : Wish()
 }
 
 sealed class Effect {
     data object StartedLoading : Effect()
-    data class LinksLoaded(val internalLinks: List<LinkItem>, val externalLinks: List<LinkItem>) :
+    data class LinksLoaded(
+        val internalLinks: List<LinkItem>,
+        val externalLinks: List<LinkItem>,
+        val customLinks: List<LinkItem>
+    ) :
         Effect()
 
     data class Error(val errorMessage: String) : Effect()
-    data class SettingAdded(val customSettings: List<LinkItem>) : Effect()
-    data class SettingToggled(val selectedLinksIds: Set<String>) : Effect()
-    data class AddSettingDialogTextUpdated(val text: String) : Effect()
+    data class CustomLinkAdded(val customLinks: List<LinkItem>) : Effect()
+    data class LinkToggled(val selectedLinksIds: Set<String>) : Effect()
+    data class AddCustomLinkDialogTextUpdated(val text: String) : Effect()
     data class DialogVisibilityChanged(val isVisible: Boolean) : Effect()
 }
 
@@ -184,15 +201,15 @@ sealed class News {
     data class ShowToast(val toastMessage: String) : News()
 }
 
-data class SettingsState(
+data class LinksState(
     val internalLinks: List<LinkItem> = emptyList(),
     val externalLinks: List<LinkItem> = emptyList(),
-    val customSetting: List<LinkItem> = emptyList(),
+    val customLinks: List<LinkItem> = emptyList(),
     val selectedLinksIds: Set<String> = emptySet(),
-    val addSettingDialogText: String = "",
+    val addCustomLinkDialogText: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isAddSettingDialogVisible: Boolean = false
+    val isAddCustomLinkDialogVisible: Boolean = false
 )
 
 /* Это вариант MVI, где также используется Flow и одна точка входа - handleWish(), однако действия из неё передаются только в actor, который сам передаёт effect и state в reducer.

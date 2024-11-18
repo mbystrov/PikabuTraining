@@ -12,4 +12,6 @@ interface ApiService {
     suspend fun getExternalLinks(): List<LinkItem>
     @GET("internal_links")
     suspend fun getInternalLinks(): List<LinkItem>
+    @GET("custom_links")
+    suspend fun getCustomLinks(): List<LinkItem>
 }

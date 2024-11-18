@@ -19,12 +19,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import ru.training.pikabu.pages.PostsPage
-import ru.training.pikabu.pages.SettingsPage
+import ru.training.pikabu.pages.LinksPage
 
 @Composable
 fun MainScreen(
     postViewModel: PostsViewModel,
-    settingsViewModel: SettingsViewModel,
+    linksViewModel: LinksViewModel,
     currentScreenIndex: Int,
     onScreenChange: (Int) -> Unit
 ) {
@@ -64,7 +64,7 @@ fun MainScreen(
             modifier = Modifier.padding(innerPadding),
             selectedIndex = selectedIndex,
             postsViewModel = postViewModel,
-            settingsViewModel = settingsViewModel
+            linksViewModel = linksViewModel
         )
     }
 }
@@ -74,12 +74,12 @@ fun ContentScreen(
     modifier: Modifier = Modifier,
     selectedIndex: Int,
     postsViewModel: PostsViewModel,
-    settingsViewModel: SettingsViewModel
+    linksViewModel: LinksViewModel
 ) {
     Box(modifier = modifier) {
         when (selectedIndex) {
             0 -> PostsPage(viewModel = postsViewModel)
-            1 -> SettingsPage(viewModel = settingsViewModel)
+            1 -> LinksPage(viewModel = linksViewModel)
         }
     }
 }

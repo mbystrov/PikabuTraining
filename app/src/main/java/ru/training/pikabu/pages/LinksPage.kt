@@ -39,8 +39,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import ru.training.pikabu.News
 import ru.training.pikabu.R
-import ru.training.pikabu.SettingsState
-import ru.training.pikabu.SettingsViewModel
+import ru.training.pikabu.LinksState
+import ru.training.pikabu.LinksViewModel
 import ru.training.pikabu.Wish
 import ru.training.pikabu.data.model.LinkItem
 import ru.training.pikabu.data.model.LinkType
@@ -48,9 +48,9 @@ import ru.training.pikabu.showToast
 import ru.training.pikabu.ui.theme.PikabuDimensions
 
 @Composable
-fun SettingsPage(
+fun LinksPage(
     modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel
+    viewModel: LinksViewModel
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
@@ -68,26 +68,26 @@ fun SettingsPage(
         if (state.isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         } else {
-            SettingsContent(
+            LinksContent(
                 state = state,
-                onAddSettingClick = { viewModel.handleWish(Wish.ShowAddSettingDialog) },
+                onAddCustomLinkClick = { viewModel.handleWish(Wish.ShowAddCustomLinkDialog) },
                 onLinkToggle = { linkText ->
                     viewModel.handleWish(
-                        Wish.ToggleSetting(
+                        Wish.ToggleLink(
                             linkText
                         )
                     )
                 }
             )
-            if (state.isAddSettingDialogVisible) {
-                AddSettingDialog(
+            if (state.isAddCustomLinkDialogVisible) {
+                AddCustomLinkDialog(
                     state = state,
-                    onTextChange = { newSettingName ->
-                        viewModel.handleWish(Wish.UpdateAddSettingDialogText(newSettingName))
+                    onTextChange = { newCustomLinkName ->
+                        viewModel.handleWish(Wish.UpdateAddCustomLinkDialogText(newCustomLinkName))
                     },
-                    onDismiss = { viewModel.handleWish(Wish.ShowAddSettingDialog) },
+                    onDismiss = { viewModel.handleWish(Wish.ShowAddCustomLinkDialog) },
                     onConfirm = { text, iconResource ->
-                        viewModel.handleWish(Wish.AddSetting(text, iconResource))
+                        viewModel.handleWish(Wish.AddCustomLink(text, iconResource))
                     }
                 )
             }
@@ -109,41 +109,41 @@ fun Header(modifier: Modifier = Modifier, text: String) {
 }
 
 @Composable
-fun SettingsContent(
-    state: SettingsState,
-    onAddSettingClick: () -> Unit,
+fun LinksContent(
+    state: LinksState,
+    onAddCustomLinkClick: () -> Unit,
     onLinkToggle: (String) -> Unit
 ) {
     LazyColumn {
         item {
             InternalLinksSection(
                 links = state.internalLinks,
-                selectedSettings = state.selectedLinksIds,
+                selectedLinks = state.selectedLinksIds,
                 onClickToggle = onLinkToggle
             )
         }
         item {
             ExternalLinksSection(
                 links = state.externalLinks,
-                selectedSettings = state.selectedLinksIds,
+                selectedLinks = state.selectedLinksIds,
                 onClickToggle = onLinkToggle
             )
         }
         item {
-            CustomSettingsSection(
-                settings = state.customSetting,
-                selectedSettings = state.selectedLinksIds,
+            CustomLinksSection(
+                links = state.customLinks,
+                selectedLinks = state.selectedLinksIds,
                 onClickToggle = onLinkToggle
             )
         }
-        item { AddSettingButton(onClick = onAddSettingClick) }
+        item { AddCustomLinkButton(onClick = onAddCustomLinkClick) }
     }
 }
 
 @Composable
 fun InternalLinksSection(
     links: List<LinkItem>,
-    selectedSettings: Set<String>,
+    selectedLinks: Set<String>,
     onClickToggle: (String) -> Unit
 ) {
     Column(
@@ -152,7 +152,7 @@ fun InternalLinksSection(
         links.forEach { link ->
             LinkItemComposable(
                 item = link,
-                isSelected = selectedSettings.contains(link.text),
+                isSelected = selectedLinks.contains(link.text),
                 onClick = {
                     onClickToggle(link.text)
                 })
@@ -165,14 +165,14 @@ fun InternalLinksSection(
 fun ExternalLinksSection(
     modifier: Modifier = Modifier,
     links: List<LinkItem>,
-    selectedSettings: Set<String>,
+    selectedLinks: Set<String>,
     onClickToggle: (String) -> Unit
 ) {
     Column(modifier = modifier) {
         links.forEach { link ->
             LinkItemComposable(
                 item = link,
-                isSelected = selectedSettings.contains(link.text),
+                isSelected = selectedLinks.contains(link.text),
                 onClick = {
                     onClickToggle(link.text)
                 })
@@ -181,19 +181,19 @@ fun ExternalLinksSection(
 }
 
 @Composable
-fun CustomSettingsSection(
+fun CustomLinksSection(
     modifier: Modifier = Modifier,
-    settings: List<LinkItem>,
-    selectedSettings: Set<String>,
+    links: List<LinkItem>,
+    selectedLinks: Set<String>,
     onClickToggle: (String) -> Unit,
 ) {
     Column {
-        settings.forEach { setting ->
+        links.forEach { linkItem ->
             LinkItemComposable(
-                item = setting,
-                isSelected = selectedSettings.contains(setting.text),
+                item = linkItem,
+                isSelected = selectedLinks.contains(linkItem.text),
                 onClick = {
-                    onClickToggle(setting.text)
+                    onClickToggle(linkItem.text)
                 })
             HorizontalDivider()
         }
@@ -201,7 +201,7 @@ fun CustomSettingsSection(
 }
 
 @Composable
-fun AddSettingButton(
+fun AddCustomLinkButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -279,16 +279,18 @@ fun TrailingIcon(modifier: Modifier = Modifier, type: LinkType) {
 fun getIconResource(type: LinkType) = when (type) {
     is LinkType.Internal -> R.drawable.arrow
     is LinkType.External -> R.drawable.new_tab
+    is LinkType.Custom -> R.drawable.arrow
 }
 
 fun getContentDescription(item: LinkItem) = when (item.type) {
     is LinkType.Internal -> "${item.text}, нажмите для открытия экрана"
     is LinkType.External -> "${item.text}, нажмите для перехода на сайт"
+    is LinkType.Custom -> "${item.text}, нажмите для перехода на сайт"
 }
 
 @Composable
-fun AddSettingDialog(
-    state: SettingsState,
+fun AddCustomLinkDialog(
+    state: LinksState,
     onTextChange: (String) -> Unit,
     onDismiss: () -> Unit,
     onConfirm: (String, Int) -> Unit
@@ -312,7 +314,7 @@ fun AddSettingDialog(
         text = {
             Column {
                 TextField(
-                    value = state.addSettingDialogText,
+                    value = state.addCustomLinkDialogText,
                     onValueChange = { onTextChange(it) },
                     label = { Text("Название настройки") }
                 )
@@ -339,7 +341,7 @@ fun AddSettingDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(state.addSettingDialogText, selectedIcon) }
+                onClick = { onConfirm(state.addCustomLinkDialogText, selectedIcon) }
             ) {
                 Text("Добавить")
             }

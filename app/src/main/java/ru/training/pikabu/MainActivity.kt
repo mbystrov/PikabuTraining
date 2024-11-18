@@ -18,19 +18,21 @@ fun showToast(context: Context, message: String, duration: Int = Toast.LENGTH_SH
 }
 
 class MainActivity : ComponentActivity() {
-    private val postsViewModel: PostsViewModel by viewModels()
-    private val settingsViewModel: SettingsViewModel by viewModels()
+    private lateinit var application: PikabuApplication
+    private val postsViewModel: PostsViewModel by viewModels { PostsViewModel.factory(application) }
+    private val linksViewModel: LinksViewModel by viewModels { LinksViewModel.factory(application) }
     private val currentScreenIndexKey = "current_screen_index"
     private var currentScreenIndex = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        application = applicationContext as PikabuApplication
         currentScreenIndex = savedInstanceState?.getInt(currentScreenIndexKey) ?: 0
         setContent {
             PikabuTrainingTheme {
                 MainScreen(
                     postViewModel = postsViewModel,
-                    settingsViewModel = settingsViewModel,
+                    linksViewModel = linksViewModel,
                     currentScreenIndex = currentScreenIndex,
                     onScreenChange = { screenIndex ->
                         currentScreenIndex = screenIndex
