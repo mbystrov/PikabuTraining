@@ -279,11 +279,13 @@ fun TrailingIcon(modifier: Modifier = Modifier, type: LinkType) {
 fun getIconResource(type: LinkType) = when (type) {
     is LinkType.Internal -> R.drawable.arrow
     is LinkType.External -> R.drawable.new_tab
+    is LinkType.Custom -> R.drawable.arrow
 }
 
 fun getContentDescription(item: LinkItem) = when (item.type) {
     is LinkType.Internal -> "${item.text}, нажмите для открытия экрана"
     is LinkType.External -> "${item.text}, нажмите для перехода на сайт"
+    is LinkType.Custom -> "${item.text}, нажмите для перехода на сайт"
 }
 
 @Composable

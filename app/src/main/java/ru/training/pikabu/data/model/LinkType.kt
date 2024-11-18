@@ -17,6 +17,9 @@ sealed class LinkType {
     @Serializable
     data object External : LinkType()
 
+    @Serializable
+    data object Custom : LinkType()
+
     object LinkTypeSerializer : KSerializer<LinkType> {
         override val descriptor: SerialDescriptor =
             PrimitiveSerialDescriptor("LinkType", PrimitiveKind.STRING)
@@ -24,15 +27,17 @@ sealed class LinkType {
         override fun serialize(encoder: Encoder, value: LinkType) =
             encoder.encodeString(
                 when (value) {
-                    is Internal -> "Internal"
-                    is External -> "External"
+                    is Internal -> Internal.toString()
+                    is External -> External.toString()
+                    is Custom -> Custom.toString()
                 }
             )
 
         override fun deserialize(decoder: Decoder) =
             when (val linkTypeString = decoder.decodeString()) {
-                "Internal" -> Internal
-                "External" -> External
+                Internal.toString() -> Internal
+                External.toString() -> External
+                Custom.toString() -> Custom
                 else -> throw SerializationException("Неизвестный тип ссылки: $linkTypeString")
             }
     }

@@ -20,7 +20,7 @@ fun showToast(context: Context, message: String, duration: Int = Toast.LENGTH_SH
 class MainActivity : ComponentActivity() {
     private lateinit var application: PikabuApplication
     private val postsViewModel: PostsViewModel by viewModels { PostsViewModel.factory(application) }
-    private val settingsViewModel: SettingsViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel by viewModels { SettingsViewModel.factory(application) }
     private val currentScreenIndexKey = "current_screen_index"
     private var currentScreenIndex = 0
 

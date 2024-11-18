@@ -1,54 +1,37 @@
 package ru.training.pikabu.data.repository
 
-import ru.training.pikabu.R
 import ru.training.pikabu.data.api.ApiService
+import ru.training.pikabu.data.dao.LinkItemDao
 import ru.training.pikabu.data.model.LinkItem
 import ru.training.pikabu.data.model.LinkType
 
-class SettingsRepositoryImpl(private val apiService: ApiService) : SettingsRepository {
-    private val internalLinks = mutableListOf<LinkItem>()
-    private val externalLinks = mutableListOf<LinkItem>()
-    private val customSettings = mutableListOf<LinkItem>()
+class SettingsRepositoryImpl(
+    private val apiService: ApiService,
+    private val linkItemDao: LinkItemDao
+) : SettingsRepository {
 
-    override suspend fun getInternalLinks(): List<LinkItem> {
-        try {
-            val links = apiService.getInternalLinks()
-            internalLinks.clear()
-            internalLinks.addAll(links)
+    override suspend fun getInternalLinks(): List<LinkItem> = getLinks(LinkType.Internal)
+
+    override suspend fun getExternalLinks(): List<LinkItem> = getLinks(LinkType.External)
+
+    override suspend fun getCustomSettings(): List<LinkItem> = getLinks(LinkType.Custom)
+
+    private suspend fun getLinks(linkType: LinkType): List<LinkItem> {
+        return try {
+            val links = when(linkType) {
+                LinkType.Internal -> apiService.getInternalLinks()
+                LinkType.External -> apiService.getExternalLinks()
+                LinkType.Custom -> apiService.getCustomLinks()
+            }
+            linkItemDao.deleteAllLinks()
+            linkItemDao.addLinks(links)
+            links
         } catch (e: Exception) {
-            internalLinks.addAll(
-                listOf(
-                    LinkItem("Комментарии дня", R.drawable.comment, LinkType.Internal),
-                    LinkItem("О нас", R.drawable.circle_exclamation, LinkType.Internal),
-                    LinkItem("Внешний вид", R.drawable.palette, LinkType.Internal)
-                )
-            )
+            linkItemDao.getAllLinksByType(linkType.toString())
         }
-        return internalLinks
     }
 
-    override suspend fun getExternalLinks(): List<LinkItem> {
-        try {
-            val links = apiService.getExternalLinks()
-            externalLinks.clear()
-            externalLinks.addAll(links)
-        } catch (e: Exception) {
-            externalLinks.addAll(
-                listOf(
-                    LinkItem("Кодекс Пикабу", R.drawable.pikabu_cake, LinkType.External),
-                    LinkItem("Правила соцсети", R.drawable.megaphone, LinkType.External),
-                    LinkItem("О рекомендациях", R.drawable.open_book, LinkType.External),
-                    LinkItem("FAQ", R.drawable.circle_exclamation, LinkType.External),
-                    LinkItem("Магазин", R.drawable.shop, LinkType.External),
-                    LinkItem("Зал славы", R.drawable.prize, LinkType.External)
-                )
-            )
-        }
-        return externalLinks
-    }
-
-    override suspend fun getCustomSettings(): List<LinkItem> = customSettings
     override suspend fun addCustomSetting(setting: LinkItem) {
-        customSettings.add(setting)
+        linkItemDao.addLink(setting)
     }
 }

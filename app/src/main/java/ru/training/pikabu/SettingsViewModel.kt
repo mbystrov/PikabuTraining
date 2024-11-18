@@ -1,9 +1,11 @@
 package ru.training.pikabu
 
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,15 +18,18 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.training.pikabu.data.api.RetrofitClient
+import ru.training.pikabu.data.db.AppDatabase
 import ru.training.pikabu.data.model.LinkItem
 import ru.training.pikabu.data.model.LinkType
 import ru.training.pikabu.data.repository.SettingsRepository
 import ru.training.pikabu.data.repository.SettingsRepositoryImpl
 
 /* Это вариант MVI с использованием Flow в акторе, т.о. точка входа остаётся она - handleWish() и действия из неё передаются в actor и reducer */
-class SettingsViewModel : ViewModel() {
+class SettingsViewModel(application: PikabuApplication) : AndroidViewModel(application) {
+    private val appDatabase = AppDatabase.getDatabase(application)
+    private val linkItemDao = appDatabase.linkItemDao()
     private val repository: SettingsRepository =
-        SettingsRepositoryImpl(RetrofitClient.apiService)
+        SettingsRepositoryImpl(RetrofitClient.apiService, linkItemDao)
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
     private val _news = MutableSharedFlow<News>()
@@ -68,11 +73,11 @@ class SettingsViewModel : ViewModel() {
         private suspend fun loadLinks(): Flow<Effect> = flow {
             try {
                 emit(Effect.StartedLoading)
-                delay(4000)
                 emit(
                     Effect.LinksLoaded(
                         internalLinks = repository.getInternalLinks(),
-                        externalLinks = repository.getExternalLinks()
+                        externalLinks = repository.getExternalLinks(),
+                        customLinks = repository.getCustomSettings()
                     )
                 )
             } catch (e: Exception) {
@@ -84,7 +89,7 @@ class SettingsViewModel : ViewModel() {
             try {
                 require(text.isNotEmpty()) { "Текст настройки не может быть пустым" }
                 val newCustomSetting =
-                    LinkItem(text = text, iconResource = iconResource, type = LinkType.Internal)
+                    LinkItem(text = text, iconResource = iconResource, type = LinkType.Custom)
                 repository.addCustomSetting(newCustomSetting)
                 val updatedCustomSettings = repository.getCustomSettings()
                 emit(Effect.SettingAdded(updatedCustomSettings))
@@ -109,6 +114,7 @@ class SettingsViewModel : ViewModel() {
             is Effect.LinksLoaded -> state.copy(
                 internalLinks = effect.internalLinks,
                 externalLinks = effect.externalLinks,
+                customSetting = effect.customLinks,
                 isLoading = false,
                 error = null
             )
@@ -151,6 +157,13 @@ class SettingsViewModel : ViewModel() {
 
     }
 
+    companion object {
+        fun factory(application: PikabuApplication): ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                SettingsViewModel(application)
+            }
+        }
+    }
 }
 
 typealias Actor = suspend (state: SettingsState, wish: Wish) -> Flow<Effect>
@@ -170,7 +183,11 @@ sealed class Wish {
 
 sealed class Effect {
     data object StartedLoading : Effect()
-    data class LinksLoaded(val internalLinks: List<LinkItem>, val externalLinks: List<LinkItem>) :
+    data class LinksLoaded(
+        val internalLinks: List<LinkItem>,
+        val externalLinks: List<LinkItem>,
+        val customLinks: List<LinkItem>
+    ) :
         Effect()
 
     data class Error(val errorMessage: String) : Effect()
